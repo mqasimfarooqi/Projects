@@ -1,0 +1,5 @@
+/home/qasim/Desktop/QT/build-UDPSender-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/UDPSender.dir
+/home/qasim/Desktop/QT/build-UDPSender-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/edit_cache.dir
+/home/qasim/Desktop/QT/build-UDPSender-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/rebuild_cache.dir
+/home/qasim/Desktop/QT/build-UDPSender-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/UDPSender_autogen_timestamp_deps.dir
+/home/qasim/Desktop/QT/build-UDPSender-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/UDPSender_autogen.dir
