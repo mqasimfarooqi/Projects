@@ -1,24 +1,32 @@
 #include "fileexchanger.h"
 
-FileExchanger::FileExchanger(const QHostAddress addr, const bool send, const bool udp,
+FileExchanger::FileExchanger(const QHostAddress addr, const bool send, const protocol proto,
                              const quint16 port, const QString filePath) :
-                             addr(addr), port(port), send(send), udp(udp),filePath(filePath)
+                             addr(addr), port(port), send(send), proto(proto),filePath(filePath)
 {}
 
-void FileExchanger::readyRead() {
+void FileExchanger::receivedPacket() {
+
     qInfo() << "Packet received." <<  QThread::currentThread();
+
+    if (this->proto == UDP) {
+        QUdpSocket *udpSock = dynamic_cast<QUdpSocket*>(socket);
+        QNetworkDatagram datagram = udpSock->receiveDatagram();
+        if (datagram.isValid()) {
+            qInfo() << datagram.senderAddress() << datagram.senderPort() <<  QThread::currentThread();
+        }
+    }
 }
 
-bool FileExchanger::sendFile(bool udp) {
-    QUdpSocket *udpSock;
-    QTcpSocket *tcpSock;
+bool FileExchanger::sendFile(protocol proto) {
     QFile file(filePath);
     QByteArray bytes;
     bool error = false;
 
-    if (udp) {
-        udpSock = new QUdpSocket();
-//        udpSock->deleteLater();
+    if (proto == UDP) {
+        socket = new QUdpSocket();
+        QUdpSocket *udpSock = dynamic_cast<QUdpSocket*>(socket);
+        socket->deleteLater();
 
         if (!error && file.open(QFile::ReadOnly | QFile::Text)) {
             bytes = file.readAll();
@@ -27,17 +35,15 @@ bool FileExchanger::sendFile(bool udp) {
             error = true;
         }
 
-        connect(udpSock, &QUdpSocket::bytesWritten, this, &FileExchanger::readyRead, Qt::QueuedConnection);
-
         if (!error) {
             if (!(udpSock->writeDatagram(bytes, addr, port) > 0)) {
                 qInfo() << "Error sending file." <<  QThread::currentThread();
             }
         }
-    }
-    else {
-        tcpSock = new QTcpSocket();
-        tcpSock->deleteLater();
+    } else if (proto == TCP) {
+        socket = new QTcpSocket();
+        QTcpSocket *tcpSock = dynamic_cast<QTcpSocket*>(socket);
+        socket->deleteLater();
     }
 
     file.close();
@@ -45,15 +51,14 @@ bool FileExchanger::sendFile(bool udp) {
     return error;
 }
 
-bool FileExchanger::receiveFile(bool udp) {
-    QUdpSocket *udpSock;
-    QTcpSocket *tcpSock;
+bool FileExchanger::receiveFile(protocol proto) {
     QFile file(filePath);
     bool error = false;
 
-    if (udp) {
-        udpSock = new QUdpSocket();
-        //udpSock->deleteLater();
+    if (proto == UDP) {
+        socket = new QUdpSocket();
+        QUdpSocket *udpSock = dynamic_cast<QUdpSocket*>(socket);
+        socket->deleteLater();
 
         if (!udpSock->bind(addr, port)) {
             qInfo() << "Error binding to add/port." <<  QThread::currentThread();
@@ -61,18 +66,22 @@ bool FileExchanger::receiveFile(bool udp) {
         }
 
         if (!error) {
-            connect(udpSock, &QUdpSocket::readyRead, this, &FileExchanger::readyRead, Qt::QueuedConnection);
+            connect(udpSock, &QUdpSocket::readyRead, this, &FileExchanger::receivedPacket, Qt::DirectConnection);
         }
 
-    } else {
-        tcpSock = new QTcpSocket();
-        tcpSock->deleteLater();
-    }
+        while (true) {
+            while(!udpSock->hasPendingDatagrams()) {
+                /* Do nothing while waiting for a datagram. */
+            }
 
-    while (1) {
-        QThread::currentThread()->sleep(10);
-    }
+            emit udpSock->readyRead();
+        }
 
+    } else if (proto == TCP) {
+        socket = new QTcpSocket();
+        QTcpSocket *tcpSock = dynamic_cast<QTcpSocket*>(socket);
+        socket->deleteLater();
+    }
 
     return error;
 }
@@ -85,10 +94,10 @@ void FileExchanger::run() {
 
     if (send) {
         qInfo() << "Sending a file on: " <<  QThread::currentThread();
-        error = sendFile(true);
+        error = sendFile(UDP);
     } else {
         qInfo() << "Receiving a file on: " <<  QThread::currentThread();
-        error = receiveFile(true);
+        error = receiveFile(UDP);
     }
 
     if (error) {

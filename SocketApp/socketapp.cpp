@@ -7,19 +7,25 @@ SocketApp::SocketApp(QWidget *parent)
 {
     ui->setupUi(this);
     threadpool = new QThreadPool();
-    threadpool->setMaxThreadCount(3);
+    threadpool->setMaxThreadCount(2);
 
     // Needs to be implemented on button invoke.
     QHostAddress addr;
     addr.setAddress("127.0.0.1");
-    FileExchanger *send = new FileExchanger(addr, true, true, 1234, "/home/qasim/Desktop/Rampup");
-    FileExchanger *receive = new FileExchanger(addr, false, true, 1234, "/home/qasim/Desktop/Recv");
+    //FileExchanger *send = new FileExchanger(addr, true, FileExchanger::protocol::UDP, 1234, "/home/qasim/Desktop/Rampup");
+    FileExchanger *receive = new FileExchanger(addr, false, FileExchanger::protocol::UDP, 1234, "/home/qasim/Desktop/Recv");
 
     //send->setAutoDelete(true);
-    //receive->setAutoDelete(true);
+    receive->setAutoDelete(true);
     threadpool->start(receive);
-    threadpool->start(send);
-    //qInfo() << "Running the main thread on " << QThread::currentThread();
+    while(1) {
+        QThread::currentThread()->sleep(1);
+//        FileExchanger *send = new FileExchanger(addr, true, FileExchanger::protocol::UDP, 1234, "/home/qasim/Desktop/Rampup");
+//        send->setAutoDelete(true);
+//        threadpool->start(send);
+    }
+
+    qInfo() << "Running the main thread on " << QThread::currentThread();
 }
 
 SocketApp::~SocketApp()
