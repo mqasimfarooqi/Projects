@@ -14,12 +14,13 @@
 class FileExchanger : public QObject, public QRunnable
 {
     Q_OBJECT
+
 public:
 
     enum protocol {
-        TCP,
-        UDP
-    };
+        UDP,
+        TCP
+    }; Q_ENUM(protocol)
 
     FileExchanger(const QHostAddress addr, const bool send, const protocol proto,
                   const quint16 port, const QString filePath);
@@ -30,12 +31,14 @@ public:
     bool sendFile(protocol proto);
     bool receiveFile(protocol proto);
 
+signals:
+    void receiveStarted();
+    void receiveFinished();
+    void sendStarted();
+    void sendFinished();
+
 public slots:
     void receivedPacket();
-
-signals:
-    void sigStarted();
-    void sigFinished();
 
 private:
     QAbstractSocket *socket;

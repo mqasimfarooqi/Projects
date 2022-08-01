@@ -8,22 +8,31 @@ FileExchanger::FileExchanger(const QHostAddress addr, const bool send, const pro
 void FileExchanger::receivedPacket() {
 
     QFile file(filePath);
+    bool error = false;
 
-    qInfo() << "Packet received." <<  QThread::currentThread();
-
-    if (this->proto == UDP) {
+    if (proto == UDP) {
         QUdpSocket *udpSock = dynamic_cast<QUdpSocket*>(socket);
         QNetworkDatagram datagram = udpSock->receiveDatagram();
         if (datagram.isValid()) {
-            qInfo() << datagram.senderAddress() << datagram.senderPort() <<  QThread::currentThread();
+            qInfo() << "Received from " << datagram.senderAddress() << datagram.senderPort() <<  QThread::currentThread();
+            if (file.open(QFile::WriteOnly | QFile::Text)) {
+                file.write(datagram.data());
+
+                /* Sending a signal that thread is finished. */
+                emit receiveFinished();
+            }
         }
     }
+
+    file.close();
 }
 
 bool FileExchanger::sendFile(protocol proto) {
     QFile file(filePath);
     QByteArray bytes;
     bool error = false;
+
+    emit sendStarted();
 
     if (!error && file.open(QFile::ReadOnly | QFile::Text)) {
         bytes = file.readAll();
@@ -35,20 +44,25 @@ bool FileExchanger::sendFile(protocol proto) {
     if (proto == UDP) {
         socket = new QUdpSocket();
         QUdpSocket *udpSock = dynamic_cast<QUdpSocket*>(socket);
-        socket->deleteLater();
 
         if (!error) {
             if (!(udpSock->writeDatagram(bytes, addr, port) > 0)) {
                 qInfo() << "Error sending file." <<  QThread::currentThread();
+                error = true;
+            } else {
+                emit sendFinished();
             }
         }
     } else if (proto == TCP) {
         socket = new QTcpSocket();
         QTcpSocket *tcpSock = dynamic_cast<QTcpSocket*>(socket);
-        socket->deleteLater();
     }
 
     file.close();
+
+    if (socket) {
+        delete(socket);
+    }
 
     return error;
 }
@@ -56,10 +70,12 @@ bool FileExchanger::sendFile(protocol proto) {
 bool FileExchanger::receiveFile(protocol proto) {
     bool error = false;
 
+    /* Sending a signal that thread has started. */
+    emit receiveStarted();
+
     if (proto == UDP) {
         socket = new QUdpSocket();
         QUdpSocket *udpSock = dynamic_cast<QUdpSocket*>(socket);
-        socket->deleteLater();
 
         if (!udpSock->bind(addr, port)) {
             qInfo() << "Error binding to add/port." <<  QThread::currentThread();
@@ -70,16 +86,21 @@ bool FileExchanger::receiveFile(protocol proto) {
             connect(udpSock, &QUdpSocket::readyRead, this, &FileExchanger::receivedPacket, Qt::DirectConnection);
         }
 
-        while(!udpSock->hasPendingDatagrams()) {
-            /* Do nothing while waiting for a datagram. */
-        }
+        if (!error) {
+            while(!udpSock->hasPendingDatagrams()) {
+                /* Do nothing while waiting for a datagram. */
+            }
 
-        emit udpSock->readyRead();
+            emit udpSock->readyRead();
+        }
 
     } else if (proto == TCP) {
         socket = new QTcpSocket();
         QTcpSocket *tcpSock = dynamic_cast<QTcpSocket*>(socket);
-        socket->deleteLater();
+    }
+
+    if (socket) {
+        delete(socket);
     }
 
     return error;
@@ -87,9 +108,6 @@ bool FileExchanger::receiveFile(protocol proto) {
 
 void FileExchanger::run() {
     bool error = false;
-
-    /* Sending a signal that thread has started. */
-    emit sigStarted();
 
     if (send) {
         qInfo() << "Sending a file on: " <<  QThread::currentThread();
@@ -102,7 +120,4 @@ void FileExchanger::run() {
     if (error) {
         qInfo() << "Error occured. " <<  QThread::currentThread();
     }
-
-    /* Sending a signal that thread is finished. */
-    emit sigFinished();
 }
