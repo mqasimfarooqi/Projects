@@ -9,30 +9,41 @@
 #include <QThread>
 #include <QString>
 #include <QFile>
+#include <QtNetwork>
 
 class FileExchanger : public QObject, public QRunnable
 {
     Q_OBJECT
+
 public:
-    FileExchanger(const QHostAddress addr, const bool send, const bool udp,
+
+    enum protocol {
+        UDP,
+        TCP
+    }; Q_ENUM(protocol)
+
+    FileExchanger(const QHostAddress addr, const bool send, const protocol proto,
                   const quint16 port, const QString filePath);
 
     // QRunnable interface
 public:
     void run();
-    bool sendFile(bool);
-    bool receiveFile(bool);
-
-public slots:
-    void readyRead();
+    bool sendFile(protocol proto);
+    bool receiveFile(protocol proto);
 
 signals:
-    void sigStarted();
-    void sigFinished();
+    void receiveStarted();
+    void receiveFinished();
+    void sendStarted();
+    void sendFinished();
+
+public slots:
+    void receivedPacket();
 
 private:
+    QAbstractSocket *socket;
     const bool send;
-    const bool udp;
+    const protocol proto;
     const QHostAddress addr;
     const quint16 port;
     const QString filePath;

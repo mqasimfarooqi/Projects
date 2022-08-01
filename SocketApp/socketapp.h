@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QThreadPool>
+#include <QString>
 #include "fileexchanger.h"
 
 QT_BEGIN_NAMESPACE
@@ -16,6 +17,18 @@ class SocketApp : public QWidget
 public:
     SocketApp(QWidget *parent = nullptr);
     ~SocketApp();
+
+signals:
+    void test();
+
+public slots:
+    void receiveStarted();
+    void receiveFinished();
+    void sendStarted();
+    void sendFinished();
+
+private slots:
+    void on_pb_send_clicked();
 
 private:
     Ui::SocketApp *ui;
