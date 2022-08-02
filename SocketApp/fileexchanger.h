@@ -10,6 +10,7 @@
 #include <QString>
 #include <QFile>
 #include <QtNetwork>
+#include <QEventLoop>
 
 class FileExchanger : public QObject, public QRunnable
 {
@@ -19,33 +20,33 @@ public:
 
     enum protocol {
         UDP,
-        TCP
+        TCP,
+        FTP
     }; Q_ENUM(protocol)
 
-    FileExchanger(const QHostAddress addr, const bool send, const protocol proto,
-                  const quint16 port, const QString filePath);
+    FileExchanger(const QHostAddress addr, const bool send, const QString prot,
+                  const QString port, const QString filePath);
 
-    // QRunnable interface
 public:
     void run();
     bool sendFile(protocol proto);
     bool receiveFile(protocol proto);
 
 signals:
-    void receiveStarted();
-    void receiveFinished();
-    void sendStarted();
-    void sendFinished();
+    void sigReceiveStarted();
+    void sigReceiveFinished();
+    void sigSendStarted();
+    void sigSendFinished();
 
 public slots:
-    void receivedPacket();
+    void slotReceivedPacket();
 
 private:
     QAbstractSocket *socket;
+    protocol proto;
+    int port;
     const bool send;
-    const protocol proto;
     const QHostAddress addr;
-    const quint16 port;
     const QString filePath;
 };
 

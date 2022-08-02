@@ -19,13 +19,13 @@ public:
     ~SocketApp();
 
 signals:
-    void test();
+    void signalTest();
 
 public slots:
-    void receiveStarted();
-    void receiveFinished();
-    void sendStarted();
-    void sendFinished();
+    void slotReceiveStarted();
+    void slotReceiveFinished();
+    void slotSendStarted();
+    void slotSendFinished();
 
 private slots:
     void on_pb_send_clicked();

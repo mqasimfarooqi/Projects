@@ -12,6 +12,8 @@ SocketApp::SocketApp(QWidget *parent)
 
     ui->setupUi(this);
 
+    QThread::currentThread()->setObjectName("Main Thread");
+
     ui->te_status->setPlainText("Initializing...");
 
     /* Creating threadpool for handling send and receive operations. */
@@ -35,59 +37,66 @@ SocketApp::~SocketApp()
     delete ui;
 }
 
-void SocketApp::receiveStarted()
+void SocketApp::slotReceiveStarted()
 {
     qInfo() << "Receiving file on " << QThread::currentThread();
-    ui->te_status->appendPlainText("Receiving file");
+    ui->te_status->appendPlainText("Started receiving file");
 }
 
-void SocketApp::receiveFinished()
+void SocketApp::slotReceiveFinished()
 {
     qInfo() << "File received successfully on " << QThread::currentThread();
-    ui->te_status->appendPlainText("File received successfully");
+    ui->te_status->appendPlainText("Finished receiving file");
 }
 
-void SocketApp::sendStarted()
+void SocketApp::slotSendStarted()
 {
     qInfo() << "Sending file on " << QThread::currentThread();
-    ui->te_status->appendPlainText("Sending file");
+    ui->te_status->appendPlainText("Starting to sending file");
 }
 
-void SocketApp::sendFinished()
+void SocketApp::slotSendFinished()
 {
     qInfo() << "File sent on " << QThread::currentThread();
-    ui->te_status->appendPlainText("File sent");
+    ui->te_status->appendPlainText("Finished sending file");
 }
 
 void SocketApp::on_pb_send_clicked()
 {
     QHostAddress addr;
+    bool success = false;
 
     ui->te_status->clear();
+    ui->le_port->text().toUInt(&success);
+    if (!success) {
+        ui->te_status->appendPlainText("Incorrect port");
+    }
 
-    addr.setAddress(ui->le_ip->text());
-    FileExchanger *receive = new FileExchanger(addr, false, FileExchanger::protocol::UDP,
-                                               1234, ui->le_receivepath->text());
+    if (success) {
+        addr.setAddress(ui->le_ip->text());
+        FileExchanger *receive = new FileExchanger(addr, false, ui->cb_protocol->currentText(),
+                                                   ui->le_port->text(), ui->le_receivepath->text());
 
-    FileExchanger *send = new FileExchanger(addr, true, FileExchanger::protocol::UDP,
-                                            1234, ui->le_sendfile->text());
+        FileExchanger *send = new FileExchanger(addr, true, ui->cb_protocol->currentText(),
+                                                ui->le_port->text(), ui->le_sendfile->text());
 
-    connect(receive, &FileExchanger::receiveStarted, this,
-            &SocketApp::receiveStarted, Qt::QueuedConnection);
+        connect(receive, &FileExchanger::sigReceiveStarted, this,
+                &SocketApp::slotReceiveStarted, Qt::QueuedConnection);
 
-    connect(receive, &FileExchanger::receiveFinished, this,
-            &SocketApp::receiveFinished, Qt::QueuedConnection);
+        connect(receive, &FileExchanger::sigReceiveFinished, this,
+                &SocketApp::slotReceiveFinished, Qt::QueuedConnection);
 
-    connect(send, &FileExchanger::sendStarted, this,
-            &SocketApp::sendStarted, Qt::QueuedConnection);
+        connect(send, &FileExchanger::sigSendStarted, this,
+                &SocketApp::slotSendStarted, Qt::QueuedConnection);
 
-    connect(send, &FileExchanger::sendFinished, this,
-            &SocketApp::sendFinished, Qt::QueuedConnection);
+        connect(send, &FileExchanger::sigSendFinished, this,
+                &SocketApp::slotSendFinished, Qt::QueuedConnection);
 
-    receive->setAutoDelete(true);
-    threadpool->start(receive);
+        receive->setAutoDelete(true);
+        threadpool->start(receive);
 
-    send->setAutoDelete(true);
-    threadpool->start(send);
+        send->setAutoDelete(true);
+        threadpool->start(send);
+    }
 }
 
