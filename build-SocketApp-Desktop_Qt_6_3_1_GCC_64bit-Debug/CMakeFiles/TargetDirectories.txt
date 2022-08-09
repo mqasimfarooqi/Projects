@@ -1,5 +1,0 @@
-/home/qasim/Desktop/QT/build-SocketApp-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/SocketApp.dir
-/home/qasim/Desktop/QT/build-SocketApp-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/edit_cache.dir
-/home/qasim/Desktop/QT/build-SocketApp-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/rebuild_cache.dir
-/home/qasim/Desktop/QT/build-SocketApp-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/SocketApp_autogen_timestamp_deps.dir
-/home/qasim/Desktop/QT/build-SocketApp-Desktop_Qt_6_3_1_GCC_64bit-Debug/CMakeFiles/SocketApp_autogen.dir
