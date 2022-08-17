@@ -21,7 +21,8 @@ public:
 
     enum protocol {
         UDP,
-        TCP
+        TCP,
+        FTP
     }; Q_ENUM(protocol)
 
     FileExchanger(const QHostAddress addr, const bool send, const QString prot,

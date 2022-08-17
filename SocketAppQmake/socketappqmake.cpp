@@ -1,11 +1,11 @@
-#include "socketapp.h"
-#include "./ui_socketapp.h"
+#include "socketappqmake.h"
+#include "ui_socketappqmake.h"
 
 #define MAX_THREADS 3
 
-SocketApp::SocketApp(QWidget *parent)
+SocketAppQmake::SocketAppQmake(QWidget *parent)
     : QWidget(parent)
-    , ui(new Ui::SocketApp)
+    , ui(new Ui::SocketAppQmake)
 {
     QMetaEnum metaEnum = QMetaEnum::fromType<FileExchanger::protocol>();
     quint8 counter = 0;
@@ -32,18 +32,18 @@ SocketApp::SocketApp(QWidget *parent)
     ui->te_status->appendPlainText("Initialized successfully!");
 }
 
-SocketApp::~SocketApp()
+SocketAppQmake::~SocketAppQmake()
 {
     delete ui;
 }
 
-void SocketApp::slotReceiveStarted()
+void SocketAppQmake::slotReceiveStarted()
 {
     qInfo() << "Receiving file on " << QThread::currentThread();
     ui->te_status->appendPlainText("Started receiving file");
 }
 
-void SocketApp::slotReceiveFinished()
+void SocketAppQmake::slotReceiveFinished()
 {
     qInfo() << "File received successfully on " << QThread::currentThread();
     ui->te_status->appendPlainText("Finished receiving file");
@@ -52,19 +52,19 @@ void SocketApp::slotReceiveFinished()
     ui->pb_send->setEnabled(true);
 }
 
-void SocketApp::slotSendStarted()
+void SocketAppQmake::slotSendStarted()
 {
     qInfo() << "Sending file on " << QThread::currentThread();
     ui->te_status->appendPlainText("Starting to sending file");
 }
 
-void SocketApp::slotSendFinished()
+void SocketAppQmake::slotSendFinished()
 {
     qInfo() << "File sent on " << QThread::currentThread();
     ui->te_status->appendPlainText("Finished sending file");
 }
 
-void SocketApp::on_pb_send_clicked()
+void SocketAppQmake::on_pb_send_clicked()
 {
     QHostAddress addr;
     bool success = false;
@@ -88,16 +88,16 @@ void SocketApp::on_pb_send_clicked()
                                                 ui->le_port->text(), ui->le_sendfile->text());
 
         connect(receive, &FileExchanger::sigReceiveStarted, this,
-                &SocketApp::slotReceiveStarted, Qt::QueuedConnection);
+                &SocketAppQmake::slotReceiveStarted, Qt::QueuedConnection);
 
         connect(receive, &FileExchanger::sigReceiveFinished, this,
-                &SocketApp::slotReceiveFinished, Qt::QueuedConnection);
+                &SocketAppQmake::slotReceiveFinished, Qt::QueuedConnection);
 
         connect(send, &FileExchanger::sigSendStarted, this,
-                &SocketApp::slotSendStarted, Qt::QueuedConnection);
+                &SocketAppQmake::slotSendStarted, Qt::QueuedConnection);
 
         connect(send, &FileExchanger::sigSendFinished, this,
-                &SocketApp::slotSendFinished, Qt::QueuedConnection);
+                &SocketAppQmake::slotSendFinished, Qt::QueuedConnection);
 
         receive->setAutoDelete(true);
         threadpool->start(receive);

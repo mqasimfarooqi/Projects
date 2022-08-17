@@ -144,10 +144,9 @@ bool FileExchanger::sendFile(protocol proto) {
             tcpSock->close();
         }
 
+    } else if (proto == FTP) {
+        /* Implement FTP here. */
     }
-//    else if (proto == FTP) {
-//        /* Implement FTP here. */
-//    }
 
     /* Explicitly close the file. Although it is done when the thread is killed. */
     file.close();
@@ -221,10 +220,9 @@ bool FileExchanger::receiveFile(protocol proto) {
             server = NULL;
         }
 
+    } else if (proto == FTP) {
+        /* Implement FTP here. */
     }
-//    else if (proto == FTP) {
-//        /* Implement FTP here. */
-//    }
 
     /* Delete socket if its a valid pointer. */
     if (socket) {
