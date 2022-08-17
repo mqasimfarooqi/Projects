@@ -48,106 +48,99 @@
 #define GVCP_CMD_FLAG_ACKNOWLEDGE BIT(7)
 #define GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK BIT(3)
 
-typedef enum  {
-    DEVICE,
-    WEB,
-    LOCAL
-
-} enum_xml_location;
-
 /* Generic command header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint8      key_code;
-    quint8      flag;
-    quint16_be  be_command;
-    quint16_be  be_length;
-    quint16_be  be_req_id;
+    quint8 keyCode;
+    quint8 flag;
+    quint16_be command;
+    quint16_be length;
+    quint16_be reqId;
 
-} str_gvcp_cmd_hdr;
+} strGvcpCmdHdr;
 
 /* Generic acknowledgement header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint16_be  be_status;
-    quint16_be  be_acknowledge;
-    quint16_be  be_length;
-    quint16_be  be_ack_id;
+    quint16_be status;
+    quint16_be acknowledge;
+    quint16_be length;
+    quint16_be ackId;
 
-} str_gvcp_ack_hdr;
+} strGvcpAckHdr;
 
 /* Read memory command header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint32_be  address;
-    quint16_be  reserved;
-    quint16_be  count;
+    quint32_be address;
+    quint16_be reserved;
+    quint16_be count;
 
-} str_gvcp_cmd_read_mem_hdr;
+} strGvcpCmdReadMemHdr;
 
 /* Write register command header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint32_be  register_address;
-    quint32_be  register_data;
+    quint32_be registerAddress;
+    quint32_be registerData;
 
-} str_gvcp_cmd_write_reg_hdr;
+} strGvcpCmdWriteRegHdr;
 
 /* Read register command header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint32_be  register_address;
+    quint32_be  registerAddress;
 
-} str_gvcp_cmd_read_reg_hdr;
-
-/* Discovery acknowledgement header. */
-typedef struct __attribute__ ((__packed__))
-{
-    quint16_be          spec_version_major;
-    quint16_be          spec_version_minor;
-    quint32_be          device_mode;
-    quint16_be          reserved0;
-    quint16_be          device_mac_addr_high;
-    quint32_be          device_mac_addr_low;
-    quint32_be          ip_config_options;
-    quint32_be          ip_config_current;
-    quint32_be          reserved1[3];
-    quint32_be          current_ip;
-    quint32_be          reserved2[3];
-    quint32_be          current_subnet_mask;
-    quint32_be          reserved3[3];
-    quint32_be          default_gateway;
-    quint32_be          manufacturer_name[32/4];
-    quint32_be          model_name[32/4];
-    quint32_be          device_version[32/4];
-    quint32_be          manufacturer_specific_info[48/4];
-    quint32_be          serial_number[16/4];
-    quint32_be          user_defined_name[16/4];
-
-} str_gvcp_ack_discovery_hdr;
+} strGvcpCmdReadRegHdr;
 
 /* Discovery acknowledgement header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint32_be  address;
-    QByteArray  data;
+    quint16_be specVersionMajor;
+    quint16_be specVersionMinor;
+    quint32_be deviceMode;
+    quint16_be reserved0;
+    quint16_be deviceMacAddrHigh;
+    quint32_be deviceMacAddrLow;
+    quint32_be ipConfigOptions;
+    quint32_be ipConfigCurrent;
+    quint32_be reserved1[3];
+    quint32_be currentIp;
+    quint32_be reserved2[3];
+    quint32_be currentSubnetMask;
+    quint32_be reserved3[3];
+    quint32_be defaultGateway;
+    quint32_be manufacturerName[8];
+    quint32_be modelName[8];
+    quint32_be deviceVersion[8];
+    quint32_be manufacturerSpecificInfo[12];
+    quint32_be serialNumber[4];
+    quint32_be userDefinedName[4];
 
-} str_gvcp_ack_mem_read_hdr;
+} strGvcpAckDiscoveryHdr;
+
+/* Discovery acknowledgement header. */
+typedef struct __attribute__ ((__packed__))
+{
+    quint32_be address;
+    QByteArray data;
+
+} strGvcpAckMemReadHdr;
 
 /* Non standard acknowledgement header. */
 typedef struct {
-    str_gvcp_ack_hdr    generic_ack_hdr;
-    quint32             ack_hdr_type;
-    void                *cmd_specific_ack_hdr;
+    strGvcpAckHdr genericAckHdr;
+    quint32 ackHdrType;
+    void *cmdSpecificAckHdr;
 
-} str_non_std_gvcp_ack_hdr;
+} strNonStdGvcpAckHdr;
 
 /* Non standard command header. */
 typedef struct {
-    str_gvcp_cmd_hdr    generic_cmd_hdr;
-    quint32             cmd_specific_data_length;
-    void                *cmd_specific_data;
+    strGvcpCmdHdr genericCmdHdr;
+    quint32 cmdSpecificDataLength;
+    void *cmdSpecificData;
 
-} str_non_std_gvcp_cmd_hdr;
+} strNonStdGvcpCmdHdr;
 
 #endif // GIGEVHEADERS_H

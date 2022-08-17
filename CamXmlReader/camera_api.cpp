@@ -5,19 +5,19 @@ camera_api::camera_api(QObject *parent)
 {
 }
 
-camera_api::camera_api(QUdpSocket *udp_socket, QString addr, quint8 command)
+camera_api::camera_api(QUdpSocket *udpSocket, QString addr, quint8 command)
 {
-    m_udp_sock = udp_socket;
-    m_camera = new CameraInterface(m_udp_sock);
-    m_command = command;
-    m_addr = addr;
+    mUdpSock = udpSocket;
+    mCamera = new CameraInterface(mUdpSock);
+    mCommand = command;
+    mAddr = addr;
 }
 
-void camera_api::slot_ready_read()
+void camera_api::slotReadyRead()
 {
 
     /* Emit the signal taht the ack has been received for a pending req_id. */
-    emit signal_ack_received();
+    emit signalAckReceived();
 
 }
 
@@ -25,10 +25,10 @@ void camera_api::run()
 {
     QDomDocument temp;
     /* This is the function that will execute desired commands. */
-    switch (m_command) {
+    switch (mCommand) {
     case CAMERA_API_COMMAND_READXML:
-        camera_xml_read_xml_file_from_device(temp);
-        camera_xml_read_camera_attribute("Hello", temp);
+        cameraXmlReadXmlFileFromDevice(temp);
+        cameraXmlReadCameraAttribute("Hello", temp);
 
         break;
     }
@@ -48,7 +48,7 @@ quint32 camera_api::byteArrayToUint32(const QByteArray &bytes)
     return number;
 }
 
-bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
+bool camera_api::cameraXmlReadXmlFileFromDevice(QDomDocument& xmlFile)
 {
     bool error = false;
     QList<QByteArray> url;
@@ -59,7 +59,7 @@ bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
     QByteArray xml_data;
     QScopedPointer<QEventLoop> loop(new QEventLoop);
 
-    if (!m_udp_sock) {
+    if (!mUdpSock) {
         error = true;
         qDebug() << "Invalid UDP socket pointer";
     }
@@ -70,13 +70,13 @@ bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
         rand.bounded(100, 65530);
 
         /* Set address */
-        addr.setAddress(m_addr);
+        addr.setAddress(mAddr);
 
         /* Make relevant connections. */
-        connect(m_udp_sock, &QUdpSocket::readyRead, this, &camera_api::slot_ready_read, Qt::DirectConnection);
+        connect(mUdpSock, &QUdpSocket::readyRead, this, &camera_api::slotReadyRead, Qt::DirectConnection);
 
         /* Bind UDP socket to an address. */
-        if (!(m_udp_sock->bind(addr, rand.generate()))) {
+        if (!(mUdpSock->bind(addr, rand.generate()))) {
 
             qDebug() << "Could not bind socket to an address/port.";
             error = true;
@@ -89,7 +89,7 @@ bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
     if (!error) {
 
         /* Fetch first URL. */
-        error = camera_fetch_first_url(addr, first_url);
+        error = cameraFetchFirstUrl(addr, first_url);
     }
 
     if (!error) {
@@ -99,7 +99,7 @@ bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
 
             /* Split the path, address and size. */
             url = first_url.mid(0, first_url.indexOf('\0')).split(';');
-            error = camera_fetch_xml_from_device(url[0], url[1], url[2], addr, xml_data);
+            error = cameraFetchXmlFromDevice(url[0], url[1], url[2], addr, xml_data);
 
         } else if (first_url.contains("http:")) {
             qDebug() << "Unsupported location.";
@@ -109,7 +109,7 @@ bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
     }
 
     if (!error) {
-        if(!xml_file.setContent(xml_data)) {
+        if(!xmlFile.setContent(xml_data)) {
             error = true;
         }
     }
@@ -117,13 +117,13 @@ bool camera_api::camera_xml_read_xml_file_from_device(QDomDocument& xml_file)
     return (error);
 }
 
-bool camera_api::camera_xml_read_camera_attribute(const QString feature, const QDomDocument& xml_file)
+bool camera_api::cameraXmlReadCameraAttribute(const QString feature, const QDomDocument& xmlFile)
 {
     bool error = false;
     QDomElement root;
 
     if (!error) {
-        root = xml_file.firstChildElement();
+        root = xmlFile.firstChildElement();
 
         QDomNodeList items = root.elementsByTagName("Address");
         for (int i = 0; i < items.count(); i++) {
@@ -135,52 +135,52 @@ bool camera_api::camera_xml_read_camera_attribute(const QString feature, const Q
     return error;
 }
 
-bool camera_api::camera_fetch_ack(str_non_std_gvcp_ack_hdr& ack_hdr, const quint16 req_id)
+bool camera_api::cameraFetchAck(strNonStdGvcpAckHdr& ackHdr, const quint16 reqId)
 {
     bool error = false;
 
     /* Receive the next pending ack. */
-    error = m_camera->cam_receive_ack(nullptr, ack_hdr);
+    error = mCamera->camReceiveAck(nullptr, ackHdr);
 
     /* If correct ack is received */
-    if ((ack_hdr.generic_ack_hdr.be_ack_id == req_id) && !error) {
+    if ((ackHdr.genericAckHdr.ackId == reqId) && !error) {
 
         /* Remove the pending request ID stored in vector. */
-        m_vector_pending_req.removeOne(ack_hdr.generic_ack_hdr.be_ack_id);
-        m_vector_pending_req.squeeze();
+        mVectorPendingReq.removeOne(ackHdr.genericAckHdr.ackId);
+        mVectorPendingReq.squeeze();
 
     } else {
 
         /* Wrong ACK packet is received. */
         error = true;
 
-        if (ack_hdr.cmd_specific_ack_hdr) {
+        if (ackHdr.cmdSpecificAckHdr) {
 
             /* Free memory space acquired by command specific ack header for packed with undesired req_id. */
-            free(ack_hdr.cmd_specific_ack_hdr);
+            free(ackHdr.cmdSpecificAckHdr);
         }
     }
 
     return error;
 }
 
-bool camera_api::camera_read_memory_block(const quint32 address, const quint16 size,
-                                          const QHostAddress addr, QByteArray& returned_data)
+bool camera_api::cameraReadMemoryBlock(const quint32 address, const quint16 size,
+                                          const QHostAddress addr, QByteArray& returnedData)
 {
     bool error = false;
-    QByteArray cmd_specific_data;
-    str_gvcp_cmd_read_mem_hdr hdr;
-    str_non_std_gvcp_ack_hdr ack_hdr;
-    str_gvcp_ack_mem_read_hdr *read_mem_ack_hdr;
+    QByteArray cmdSpecificData;
+    strGvcpCmdReadMemHdr hdr;
+    strNonStdGvcpAckHdr ackHdr;
+    strGvcpAckMemReadHdr *readMemAckHdr;
     QScopedPointer<QEventLoop> loop(new QEventLoop);
-    quint16 req_id = 2;
-    quint16 bytes_read = 0;
+    quint16 reqId = 2;
+    quint16 bytesRead = 0;
 
     /* General precautions. */
-    returned_data.clear();
+    returnedData.clear();
 
     /* Make connection to escape from main event loop. */
-    connect(this, &camera_api::signal_ack_received, loop.data(), &QEventLoop::quit, Qt::DirectConnection);
+    connect(this, &camera_api::signalAckReceived, loop.data(), &QEventLoop::quit, Qt::DirectConnection);
 
     /* Set the address for first iteration. */
     hdr.address = address;
@@ -191,11 +191,11 @@ bool camera_api::camera_read_memory_block(const quint32 address, const quint16 s
     while ((hdr.address < (address + size)) && !error) {
 
         /* Append data set for URL header in generic command specidifc data array. */
-        cmd_specific_data.append((const char *)&hdr, sizeof(hdr));
+        cmdSpecificData.append((const char *)&hdr, sizeof(hdr));
 
         /* Send command to the specified address. */
-        m_vector_pending_req.push_front(req_id);
-        m_camera->cam_send_cmd(GVCP_READMEM_CMD, &cmd_specific_data, &addr, GVCP_DEFAULT_UDP_PORT, req_id);
+        mVectorPendingReq.push_front(reqId);
+        mCamera->camSendCmd(GVCP_READMEM_CMD, &cmdSpecificData, &addr, GVCP_DEFAULT_UDP_PORT, reqId);
 
         /* Receive data in the array. */
         for (int retry_count = 0, error = true;
@@ -206,7 +206,7 @@ bool camera_api::camera_read_memory_block(const quint32 address, const quint16 s
             loop->exec();
 
             /* Receive the next pending ack. */
-            error = camera_fetch_ack(ack_hdr, req_id);
+            error = cameraFetchAck(ackHdr, reqId);
         }
 
         if (!error) {
@@ -214,75 +214,75 @@ bool camera_api::camera_read_memory_block(const quint32 address, const quint16 s
             hdr.address += hdr.count;
 
             /* Increase bytes read counter. */
-            bytes_read += hdr.count;
+            bytesRead += hdr.count;
 
             /* Set the next number of bytes to be read. */
             hdr.count = (((hdr.address + GVCP_MAX_PAYLOAD_LENGTH) < (address + size)) ?
-                             GVCP_MAX_PAYLOAD_LENGTH : size - bytes_read);
+                             GVCP_MAX_PAYLOAD_LENGTH : size - bytesRead);
 
             /* Append data to the byte_array to be returned. */
-            read_mem_ack_hdr = (str_gvcp_ack_mem_read_hdr *)ack_hdr.cmd_specific_ack_hdr;
-            returned_data.append(read_mem_ack_hdr->data);
+            readMemAckHdr = (strGvcpAckMemReadHdr *)ackHdr.cmdSpecificAckHdr;
+            returnedData.append(readMemAckHdr->data);
 
-            /* Free up memory spaceacquired by command specific header. */
-            if (ack_hdr.cmd_specific_ack_hdr) {
+            /* Free up memory space acquired by command specific header. */
+            if (ackHdr.cmdSpecificAckHdr) {
 
                 /* Free memory allocated by ack header. */
-                delete((str_gvcp_ack_mem_read_hdr *)ack_hdr.cmd_specific_ack_hdr);
+                delete((strGvcpAckMemReadHdr *)ackHdr.cmdSpecificAckHdr);
             }
 
             /* Increase the request ID for next transation. */
-            req_id++;
+            reqId++;
 
             /* Clear buffers for next command processing. */
-            cmd_specific_data.clear();
+            cmdSpecificData.clear();
         }
     }
 
     return error;
 }
 
-bool camera_api::camera_fetch_first_url(QHostAddress addr, QByteArray& byte_array)
+bool camera_api::cameraFetchFirstUrl(QHostAddress addr, QByteArray& byteArray)
 {
     bool error = false;
-    QByteArray cmd_specific_data;
-    str_gvcp_cmd_read_mem_hdr hdr;
-    str_non_std_gvcp_ack_hdr ack_hdr;
-    str_gvcp_ack_mem_read_hdr *read_mem_ack_hdr;
+    QByteArray cmdSpecificData;
+    strGvcpCmdReadMemHdr hdr;
+    strNonStdGvcpAckHdr ackHdr;
+    strGvcpAckMemReadHdr *readMemAckHdr;
     QNetworkDatagram datagram;
     QScopedPointer<QEventLoop> loop(new QEventLoop);
-    quint8 retry_count = 0;
-    quint16 req_id = 1;
+    quint8 retryCount = 0;
+    quint16 reqId = 1;
 
     /* Clear buffers for command processing. */
-    cmd_specific_data.clear();
+    cmdSpecificData.clear();
     memset(&hdr, 0x00, sizeof(hdr));
 
     /* Make connection to escape from main event loop. */
-    connect(this, &camera_api::signal_ack_received, loop.data(), &QEventLoop::quit, Qt::DirectConnection);
+    connect(this, &camera_api::signalAckReceived, loop.data(), &QEventLoop::quit, Qt::DirectConnection);
 
     /* Set properties of header to fetch URL. */
     hdr.address = DEVICE_FIRST_URL_ADDRESS;
     hdr.count = DEVICE_URL_ADDRESS_REG_LENGTH;
 
     /* Append data set for URL header in generic command specidifc data array. */
-    cmd_specific_data.append((const char *)&hdr, sizeof(hdr));
+    cmdSpecificData.append((const char *)&hdr, sizeof(hdr));
 
     /* Send command to the specified address. */
-    m_vector_pending_req.push_front(req_id);
-    m_camera->cam_send_cmd(GVCP_READMEM_CMD, &cmd_specific_data, &addr, GVCP_DEFAULT_UDP_PORT, req_id);
+    mVectorPendingReq.push_front(reqId);
+    mCamera->camSendCmd(GVCP_READMEM_CMD, &cmdSpecificData, &addr, GVCP_DEFAULT_UDP_PORT, reqId);
 
     /* Set to true and turn it to false when finding the right packet. */
     error = true;
 
     /* Receive data in the array. */
-    for (retry_count = 0; retry_count < MAX_ACK_FETCH_RETRY_COUNT; retry_count++) {
+    for (retryCount = 0; retryCount < MAX_ACK_FETCH_RETRY_COUNT; retryCount++) {
 
         /* Wait for the signal, for reception of first URL. */
         loop->exec();
 
         /* Receive the next pending ack. */
-        error = camera_fetch_ack(ack_hdr, req_id);
+        error = cameraFetchAck(ackHdr, reqId);
 
         /* Correct acknowledgement packet has been found. */
         if (!error)
@@ -292,51 +292,50 @@ bool camera_api::camera_fetch_first_url(QHostAddress addr, QByteArray& byte_arra
     if (!error) {
 
         /* Now we have first URL. */
-        read_mem_ack_hdr = (str_gvcp_ack_mem_read_hdr *)ack_hdr.cmd_specific_ack_hdr;
+        readMemAckHdr = (strGvcpAckMemReadHdr *)ackHdr.cmdSpecificAckHdr;
 
         /* Append data into the byte array, and return it. */
-        byte_array.append(read_mem_ack_hdr->data);
+        byteArray.append(readMemAckHdr->data);
     }
 
-    if (ack_hdr.cmd_specific_ack_hdr) {
+    if (ackHdr.cmdSpecificAckHdr) {
 
         /* Free memory allocated by ack header. */
-        delete((str_gvcp_ack_mem_read_hdr *)ack_hdr.cmd_specific_ack_hdr);
+        delete((strGvcpAckMemReadHdr *)ackHdr.cmdSpecificAckHdr);
     }
 
     return error;
 }
 
-bool camera_api::camera_fetch_xml_from_device(QByteArray file_name, QByteArray start_address,
+bool camera_api::cameraFetchXmlFromDevice(QByteArray fileName, QByteArray startAddress,
                                               QByteArray size, QHostAddress addr,
-                                              QByteArray& xml_data)
+                                              QByteArray& xmlData)
 {
     bool error = false;
-    QByteArray retrieved_xml;
+    QByteArray retrievedXml;
     QNetworkDatagram datagram;
     QStringList list;
-    QFile file(file_name), xml_file;
+    QFile file(fileName), xmlFile;
     QDataStream stream(&file);
-
-    const quint32 start_address_read_from_url = byteArrayToUint32(QByteArray::fromHex(start_address));
-    const quint16 size_read_from_url = byteArrayToUint32(QByteArray::fromHex(size));
+    const quint32 startAddressReadFromUrl = byteArrayToUint32(QByteArray::fromHex(startAddress));
+    const quint16 sizeReadFromUrl = byteArrayToUint32(QByteArray::fromHex(size));
 
     /* Retrieve data from the memory blockes where XML file is stored in the device. */
-    error = camera_read_memory_block(start_address_read_from_url, size_read_from_url, addr, retrieved_xml);
+    error = cameraReadMemoryBlock(startAddressReadFromUrl, sizeReadFromUrl, addr, retrievedXml);
     if (!error) {
         if (file.open(QIODevice::ReadWrite)) {
             stream.setByteOrder(QDataStream::LittleEndian);
-            stream << retrieved_xml;
+            stream << retrievedXml;
         }
 
-        list = JlCompress::extractDir(file_name, file_name + "_extracted");
+        list = JlCompress::extractDir(fileName, fileName + "_extracted");
         if (list.isEmpty()) {
             error = true;
         } else {
 
-            xml_file.setFileName(list.first());
-            if (xml_file.open(QIODevice::ReadWrite)) {
-                xml_data = xml_file.readAll();
+            xmlFile.setFileName(list.first());
+            if (xmlFile.open(QIODevice::ReadWrite)) {
+                xmlData = xmlFile.readAll();
             }
         }
     }
