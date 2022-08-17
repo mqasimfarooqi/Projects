@@ -5,10 +5,6 @@ CameraInterface::CameraInterface(QObject *parent)
     : QObject{parent} {
 }
 
-CameraInterface::CameraInterface(QUdpSocket *socket) {
-    mUdpSock = socket;
-}
-
 unsigned char reverseBits(unsigned char b) {
    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
@@ -17,7 +13,7 @@ unsigned char reverseBits(unsigned char b) {
 }
 
 /* This function expects header and data to be in big endian format. */
-bool CameraInterface::camSendCmd(quint32 cmdType, QByteArray *cmdSpecificData,
+bool CameraInterface::camSendCmd(QUdpSocket *udpSock, quint32 cmdType, QByteArray *cmdSpecificData,
                                  const QHostAddress *addr, quint16 port,
                                  quint16 reqId) {
 
@@ -29,7 +25,7 @@ bool CameraInterface::camSendCmd(quint32 cmdType, QByteArray *cmdSpecificData,
     memset(&genericHdr, 0x00, sizeof(genericHdr));
 
     /* Check to see if the pointer is not null. */
-    if (!mUdpSock) {
+    if (!udpSock) {
         error = true;
         qDebug() << "mUdpSock pointer is invalid.";
     }
@@ -108,7 +104,7 @@ bool CameraInterface::camSendCmd(quint32 cmdType, QByteArray *cmdSpecificData,
         }
 
         /* Write datagram to the udp socket. */
-        if(!(mUdpSock->writeDatagram(datagram, *addr, port) > 0)) {
+        if(!(udpSock->writeDatagram(datagram, *addr, port) > 0)) {
             /* Enter this when bytes written are <= 0. */
 
             qDebug() << "Error sending datagram.";
@@ -119,14 +115,14 @@ bool CameraInterface::camSendCmd(quint32 cmdType, QByteArray *cmdSpecificData,
     return error;
 }
 
-bool CameraInterface::camReceiveAck(QByteArray *rawSocketData, strNonStdGvcpAckHdr& ackHeader) {
+bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, QByteArray *rawSocketData, strNonStdGvcpAckHdr& ackHeader) {
     bool                    error = false;
     char*                   dataPtr = nullptr;
     QByteArray              tempArray = { 0 };
     QNetworkDatagram        datagram = { 0 };
 
     /* Check to see if the pointer is not null. */
-    if (!mUdpSock) {
+    if (!udpSock) {
         error = true;
         qDebug() << "mUdpSock pointer is invalid.";
     }
@@ -134,7 +130,7 @@ bool CameraInterface::camReceiveAck(QByteArray *rawSocketData, strNonStdGvcpAckH
     if (!error) {
         /* Enter only if mUdpSock is a valid pointer. */
 
-        if (!(mUdpSock->hasPendingDatagrams())) {
+        if (!(udpSock->hasPendingDatagrams())) {
 
             /* No datagrams are waiting to be read. */
             error = true;
@@ -142,7 +138,7 @@ bool CameraInterface::camReceiveAck(QByteArray *rawSocketData, strNonStdGvcpAckH
         } else {
 
             /* Valid datagrams are waiting to be read. */
-            datagram = mUdpSock->receiveDatagram();
+            datagram = udpSock->receiveDatagram();
         }
     }
 

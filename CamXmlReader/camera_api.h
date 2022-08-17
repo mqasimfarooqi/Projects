@@ -43,7 +43,6 @@ private:
 
     /* Private variables. */
     /* This class will thread send/receive */
-    CameraInterface *mCamera;
     QUdpSocket *mUdpSock;
     QVector<quint16> mVectorPendingReq;
     QString mAddr;

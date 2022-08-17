@@ -8,7 +8,6 @@ camera_api::camera_api(QObject *parent)
 camera_api::camera_api(QUdpSocket *udpSocket, QString addr, quint8 command)
 {
     mUdpSock = udpSocket;
-    mCamera = new CameraInterface(mUdpSock);
     mCommand = command;
     mAddr = addr;
 }
@@ -140,7 +139,7 @@ bool camera_api::cameraFetchAck(strNonStdGvcpAckHdr& ackHdr, const quint16 reqId
     bool error = false;
 
     /* Receive the next pending ack. */
-    error = mCamera->camReceiveAck(nullptr, ackHdr);
+    error = CameraInterface::camReceiveAck(mUdpSock, nullptr, ackHdr);
 
     /* If correct ack is received */
     if ((ackHdr.genericAckHdr.ackId == reqId) && !error) {
@@ -195,7 +194,7 @@ bool camera_api::cameraReadMemoryBlock(const quint32 address, const quint16 size
 
         /* Send command to the specified address. */
         mVectorPendingReq.push_front(reqId);
-        mCamera->camSendCmd(GVCP_READMEM_CMD, &cmdSpecificData, &addr, GVCP_DEFAULT_UDP_PORT, reqId);
+        CameraInterface::camSendCmd(mUdpSock, GVCP_READMEM_CMD, &cmdSpecificData, &addr, GVCP_DEFAULT_UDP_PORT, reqId);
 
         /* Receive data in the array. */
         for (int retry_count = 0, error = true;
@@ -270,7 +269,7 @@ bool camera_api::cameraFetchFirstUrl(QHostAddress addr, QByteArray& byteArray)
 
     /* Send command to the specified address. */
     mVectorPendingReq.push_front(reqId);
-    mCamera->camSendCmd(GVCP_READMEM_CMD, &cmdSpecificData, &addr, GVCP_DEFAULT_UDP_PORT, reqId);
+    CameraInterface::camSendCmd(mUdpSock, GVCP_READMEM_CMD, &cmdSpecificData, &addr, GVCP_DEFAULT_UDP_PORT, reqId);
 
     /* Set to true and turn it to false when finding the right packet. */
     error = true;
@@ -301,15 +300,15 @@ bool camera_api::cameraFetchFirstUrl(QHostAddress addr, QByteArray& byteArray)
     if (ackHdr.cmdSpecificAckHdr) {
 
         /* Free memory allocated by ack header. */
-        delete((strGvcpAckMemReadHdr *)ackHdr.cmdSpecificAckHdr);
+        free(ackHdr.cmdSpecificAckHdr);
     }
 
     return error;
 }
 
 bool camera_api::cameraFetchXmlFromDevice(QByteArray fileName, QByteArray startAddress,
-                                              QByteArray size, QHostAddress addr,
-                                              QByteArray& xmlData)
+                                          QByteArray size, QHostAddress addr,
+                                          QByteArray& xmlData)
 {
     bool error = false;
     QByteArray retrievedXml;

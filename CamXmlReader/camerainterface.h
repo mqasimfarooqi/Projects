@@ -10,26 +10,24 @@
 #include <QtEndian>
 #include <QRandomGenerator>
 #include <QtNetwork>
-#include "gigevheaders.h"
+#include "gvcpHeaders.h"
 
 class CameraInterface : public QObject
 {
     Q_OBJECT
 
 public:
-
-    explicit CameraInterface(QObject *parent = nullptr);
-    CameraInterface(QUdpSocket *socket);
-
     /* Send a command to specified address and port. */
-    bool camSendCmd(quint32 cmdType, QByteArray *cmdSpecificData, const QHostAddress *addr, quint16 port, quint16 reqId);
+    static bool camSendCmd(QUdpSocket *udpSock, quint32 cmdType, QByteArray *cmdSpecificData,
+                           const QHostAddress *addr, quint16 port, quint16 reqId);
 
     /* Receive a packet from UDP socket. */
     /* NOTE: This function allocates memory for command specific acknowledge. */
-    bool camReceiveAck(QByteArray *rawSocketData, strNonStdGvcpAckHdr& ackHeader);
+    static bool camReceiveAck(QUdpSocket *udpSock, QByteArray *rawSocketData,
+                              strNonStdGvcpAckHdr& ackHeader);
 
 private:
-    QUdpSocket *mUdpSock;
+    explicit CameraInterface(QObject *parent = nullptr);
 
 };
 

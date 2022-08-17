@@ -43,7 +43,9 @@ HEADERS += \
     camera_api.h \
     camerainterface.h \
     camxmlreader.h \
-    gigevheaders.h \
+    gvcpAckHeaders.h \
+    gvcpCmdHeaders.h \
+    gvcpHeaders.h \
     quazip/JlCompress.h \
     quazip/ioapi.h \
     quazip/minizip_crypt.h \
