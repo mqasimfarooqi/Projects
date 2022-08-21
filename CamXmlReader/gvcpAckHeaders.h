@@ -40,12 +40,18 @@ typedef struct __attribute__ ((__packed__))
 
 } strGvcpAckDiscoveryHdr;
 
-/* Discovery acknowledgement header. */
 typedef struct __attribute__ ((__packed__))
 {
     quint32_be address;
     QByteArray data;
 
 } strGvcpAckMemReadHdr;
+
+/* Read register acknowledgement header. */
+typedef struct __attribute__ ((__packed__))
+{
+    QByteArray registerData;
+
+} strGvcpAckRegReadHdr;
 
 #endif // GVCPACKHEADERS_H

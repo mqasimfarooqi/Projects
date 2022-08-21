@@ -13,24 +13,24 @@ unsigned char reverseBits(unsigned char b) {
 }
 
 /* This function expects header and data to be in big endian format. */
-bool CameraInterface::camSendCmd(QUdpSocket *udpSock, quint32 cmdType, QByteArray *cmdSpecificData,
-                                 const QHostAddress *addr, quint16 port,
-                                 quint16 reqId) {
+bool CameraInterface::camSendCmd(QUdpSocket *udpSock, const quint32 cmdType,
+                                 const QByteArray *cmdSpecificData, const QHostAddress *destAddr,
+                                 const quint16 port, const quint16 reqId) {
 
     bool error = false;
     QByteArray datagram = { 0 };
     strGvcpCmdHdr genericHdr;
 
-    /* Initialize memory to 0. */
-    memset(&genericHdr, 0x00, sizeof(genericHdr));
-
     /* Check to see if the pointer is not null. */
-    if (!udpSock) {
+    if (!udpSock->isValid()) {
         error = true;
         qDebug() << "mUdpSock pointer is invalid.";
     }
 
     if (!error) {
+
+        /* Initialize memory to 0. */
+        memset(&genericHdr, 0x00, sizeof(genericHdr));
 
         /* Construct generic header for a specific command type. */
         switch (cmdType) {
@@ -104,7 +104,7 @@ bool CameraInterface::camSendCmd(QUdpSocket *udpSock, quint32 cmdType, QByteArra
         }
 
         /* Write datagram to the udp socket. */
-        if(!(udpSock->writeDatagram(datagram, *addr, port) > 0)) {
+        if(!(udpSock->writeDatagram(datagram, *destAddr, port) > 0)) {
             /* Enter this when bytes written are <= 0. */
 
             qDebug() << "Error sending datagram.";
@@ -115,14 +115,110 @@ bool CameraInterface::camSendCmd(QUdpSocket *udpSock, quint32 cmdType, QByteArra
     return error;
 }
 
-bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, QByteArray *rawSocketData, strNonStdGvcpAckHdr& ackHeader) {
+bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ackHeader) {
+    bool error = false;
+    QByteArray tempArray;
+    QNetworkDatagram datagram = { 0 };
+    strGvcpAckMemReadHdr *readMemAck;
+    strGvcpAckRegReadHdr *readRegAck = nullptr;
+
+    /* Check to see if the pointer is not null. */
+    if (!udpSock->isValid()) {
+        error = true;
+        qDebug() << "mUdpSock pointer is invalid.";
+    }
+
+    if (!error) {
+        /* Enter only if mUdpSock is a valid pointer. */
+
+        if (!(udpSock->hasPendingDatagrams())) {
+
+            /* No datagrams are waiting to be read. */
+            error = true;
+
+        } else {
+
+            /* Valid datagrams are waiting to be read. */
+            datagram = udpSock->receiveDatagram();
+        }
+    }
+
+    if (!(datagram.isValid()) && !error) {
+
+        /* Set error to true because datagram is invalid. */
+        error = true;
+    }
+
+    if (!error && datagram.data().length()) {
+
+        /* A pointer pointing to the data of byte array. */
+        tempArray.append(datagram.data());
+
+        memset(&ackHeader, 0x00, sizeof(ackHeader));
+        memcpy(&ackHeader.genericAckHdr, tempArray.data(), sizeof(ackHeader.genericAckHdr));
+    }
+
+    if (!error && (ackHeader.genericAckHdr.length > 0) && tempArray.length()) {
+
+        switch (ackHeader.genericAckHdr.acknowledge) {
+
+        case GVCP_DISCOVERY_ACK:
+            ackHeader.ackHdrType = GVCP_DISCOVERY_ACK;
+            ackHeader.cmdSpecificAckHdr = new strGvcpAckDiscoveryHdr();
+            memset(ackHeader.cmdSpecificAckHdr, 0x00, sizeof(strGvcpAckDiscoveryHdr));
+            memcpy(ackHeader.cmdSpecificAckHdr, tempArray.data() + sizeof(ackHeader.genericAckHdr),
+                   sizeof(strGvcpAckDiscoveryHdr));
+            break;
+
+        case GVCP_READMEM_ACK:
+            ackHeader.ackHdrType = GVCP_READMEM_ACK;
+            ackHeader.cmdSpecificAckHdr = new strGvcpAckMemReadHdr();
+            memset(ackHeader.cmdSpecificAckHdr, 0x00, sizeof(strGvcpAckMemReadHdr));
+            readMemAck = (strGvcpAckMemReadHdr *)ackHeader.cmdSpecificAckHdr;
+
+            /* Copy address. */
+            memcpy(&readMemAck->address, tempArray.data() + sizeof(ackHeader.genericAckHdr), sizeof(readMemAck->address));
+
+            /* Copy data. */
+            readMemAck->data.append(tempArray.data() + sizeof(ackHeader.genericAckHdr) + sizeof(readMemAck->address),
+                                      ackHeader.genericAckHdr.length - sizeof(readMemAck->address));
+
+            break;
+
+        case GVCP_READREG_ACK:
+            ackHeader.ackHdrType = GVCP_READREG_ACK;
+            ackHeader.cmdSpecificAckHdr = new strGvcpAckRegReadHdr();
+            readRegAck = (strGvcpAckRegReadHdr *)ackHeader.cmdSpecificAckHdr;
+            readRegAck->registerData.clear();
+
+            /* Copy data. */
+            readRegAck->registerData.append(tempArray.data() + sizeof(ackHeader.genericAckHdr));
+
+            break;
+
+        } /* Switch case end. */
+    }
+
+    if (error) {
+
+        /* Was memory allocated for a command specific header? */
+        if (ackHeader.cmdSpecificAckHdr) {
+
+            /* Free the allocated memory. */
+            free(ackHeader.cmdSpecificAckHdr);
+        }
+    }
+
+    return (error);
+}
+
+bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, QByteArray *rawSocketData)
+{
     bool                    error = false;
-    char*                   dataPtr = nullptr;
-    QByteArray              tempArray = { 0 };
     QNetworkDatagram        datagram = { 0 };
 
     /* Check to see if the pointer is not null. */
-    if (!udpSock) {
+    if (!udpSock->isValid()) {
         error = true;
         qDebug() << "mUdpSock pointer is invalid.";
     }
@@ -154,58 +250,6 @@ bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, QByteArray *rawSocketDa
         rawSocketData->append(datagram.data());
     }
 
-    if (!error) {
-
-        /* Just create a temp array for storing payload. */
-        tempArray.append(datagram.data());
-
-        /* A pointer pointing to the data of byte array. */
-        dataPtr = tempArray.data();
-
-        memset(&ackHeader, 0x00, sizeof(ackHeader));
-        memcpy(&ackHeader.genericAckHdr, dataPtr, sizeof(ackHeader.genericAckHdr));
-    }
-
-    if ((!error) && (ackHeader.genericAckHdr.length > 0)) {
-
-        switch (ackHeader.genericAckHdr.acknowledge) {
-
-        case GVCP_DISCOVERY_ACK:
-            ackHeader.ackHdrType = GVCP_DISCOVERY_ACK;
-            ackHeader.cmdSpecificAckHdr = malloc(sizeof(strGvcpAckDiscoveryHdr));
-            memset(ackHeader.cmdSpecificAckHdr, 0x00, sizeof(strGvcpAckDiscoveryHdr));
-            memcpy(ackHeader.cmdSpecificAckHdr, dataPtr + sizeof(ackHeader.genericAckHdr),
-                   sizeof(strGvcpAckDiscoveryHdr));
-            break;
-
-        case GVCP_READMEM_ACK:
-            ackHeader.ackHdrType = GVCP_READMEM_ACK;
-            ackHeader.cmdSpecificAckHdr = malloc(sizeof(strGvcpAckMemReadHdr));
-            memset(ackHeader.cmdSpecificAckHdr, 0x00, sizeof(strGvcpAckMemReadHdr));
-            strGvcpAckMemReadHdr *readMemAck = (strGvcpAckMemReadHdr *)ackHeader.cmdSpecificAckHdr;
-
-            /* Copy address. */
-            memcpy(&readMemAck->address, dataPtr + sizeof(ackHeader.genericAckHdr), sizeof(readMemAck->address));
-
-            /* Copy data. */
-            readMemAck->data.append(dataPtr + sizeof(ackHeader.genericAckHdr) + sizeof(readMemAck->address),
-                                      ackHeader.genericAckHdr.length - sizeof(readMemAck->address));
-
-            break;
-
-        } /* Switch case end. */
-    }
-
-    if (error) {
-
-        /* Was memory allocated for a command specific header? */
-        if (ackHeader.cmdSpecificAckHdr) {
-
-            /* Free the allocated memory. */
-            free(ackHeader.cmdSpecificAckHdr);
-        }
-    }
-
-    return (error);
+    return error;
 }
 

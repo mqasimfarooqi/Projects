@@ -21,7 +21,7 @@ unix {
 }
 
 SOURCES += \
-    camera_api.cpp \
+    cameraapi.cpp \
     camerainterface.cpp \
     main.cpp \
     camxmlreader.cpp \
@@ -40,7 +40,7 @@ SOURCES += \
     quazip/unzip.c \
     quazip/zip.c
 HEADERS += \
-    camera_api.h \
+    cameraapi.h \
     camerainterface.h \
     camxmlreader.h \
     gvcpAckHeaders.h \

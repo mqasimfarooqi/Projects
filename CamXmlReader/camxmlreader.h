@@ -6,7 +6,7 @@
 #include <QThread>
 #include <QUdpSocket>
 #include <QRandomGenerator>
-#include "camera_api.h"
+#include "cameraapi.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class CamXmlReader; }
@@ -28,7 +28,7 @@ private slots:
 
 private:
     Ui::CamXmlReader *ui;
-    camera_api *cam_api;
+    cameraApi *cam_api;
     QUdpSocket m_sock;
 };
 #endif // CAMXMLREADER_H

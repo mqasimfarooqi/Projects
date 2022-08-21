@@ -8,18 +8,16 @@
 #include <QDebug>
 #include <QNetworkInterface>
 #include <QtEndian>
-#include <QRandomGenerator>
 #include <QtNetwork>
 #include "gvcpHeaders.h"
 
 class CameraInterface : public QObject
 {
-    Q_OBJECT
 
 public:
     /* Send a command to specified address and port. */
-    static bool camSendCmd(QUdpSocket *udpSock, const quint32 cmdType, const QByteArray *cmdSpecificData,
-                           const QHostAddress *destAddr, const quint16 port, const quint16 reqId);
+    static bool camSendCmd(QUdpSocket *udpSock, const quint16 cmdType, const QByteArray& cmdSpecificData,
+                           const QHostAddress& destAddr, const quint16 port, const quint16 reqId);
 
     /* Receive a packet from UDP socket. */
     /* NOTE: This function allocates memory for command specific acknowledge. */
@@ -27,11 +25,7 @@ public:
 
     /* Receive a packet from UDP socket. */
     /* NOTE: This function allocates memory for command specific acknowledge. */
-    static bool camReceiveAck(QUdpSocket *udpSock, QByteArray *rawSocketData);
-
-private:
-    explicit CameraInterface(QObject *parent = nullptr);
-
+    static bool camReceiveAck(QUdpSocket *udpSock, QByteArray& rawSocketData);
 };
 
 #endif // CAMERAINTERFACE_H

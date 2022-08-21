@@ -35,7 +35,7 @@ typedef struct __attribute__ ((__packed__))
 /* Read register command header. */
 typedef struct __attribute__ ((__packed__))
 {
-    quint32_be  registerAddress;
+    quint32_be *registerAddress;
 
 } strGvcpCmdReadRegHdr;
 
