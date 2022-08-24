@@ -4,6 +4,12 @@
 #include <QObject>
 #include <QtEndian>
 
+enum {
+    strGvcpCmdReadMemHdrADDRESS = 0,
+    strGvcpCmdReadMemHdrRESERVED = 4,
+    strGvcpCmdReadMemHdrCOUNT = 6
+};
+
 /* Generic command header. */
 ; // To remove compiler warning (Bug with clang)
 #pragma pack(push, 1)
@@ -17,8 +23,8 @@ typedef struct {
 } strGvcpCmdHdr;
 #pragma pack(pop)
 
-#pragma pack(push, 1)
 /* Read memory command header. */
+#pragma pack(push, 1)
 typedef struct {
     quint32 address;
     quint16 reserved;
@@ -27,14 +33,22 @@ typedef struct {
 } strGvcpCmdReadMemHdr;
 #pragma pack(pop)
 
+/* A wite transaction unit inside write register command. */
 #pragma pack(push, 1)
-/* Write register command header. */
 typedef struct {
     quint32 registerAddress;
     quint32 registerData;
 
 } strGvcpCmdWriteRegHdr;
 #pragma pack(pop)
+
+///* Write register command header. */
+//#pragma pack(push, 1)
+//typedef struct {
+//    strGvcpCmdWriteRegHdrUnit *writeRegUnit;
+
+//} strGvcpCmdWriteRegHdr;
+//#pragma pack(pop)
 
 /* Read register command header. */
 #pragma pack(push, 1)

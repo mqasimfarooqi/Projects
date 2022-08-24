@@ -51,7 +51,7 @@
 #define GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK BIT(3)
 
 /* Non standard acknowledgement header. */
-typedef struct {
+typedef struct NonStdGvcpAckHdr{
     strGvcpAckHdr genericAckHdr;
     quint32 ackHdrType;
     void *cmdSpecificAckHdr;

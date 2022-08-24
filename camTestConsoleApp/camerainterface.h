@@ -9,9 +9,10 @@
 #include <QNetworkInterface>
 #include <QtEndian>
 #include <QtNetwork>
+#include <QDataStream>
 #include "gvcpHeaders.h"
 
-class CameraInterface : public QObject
+class CameraInterface
 {
 
 public:

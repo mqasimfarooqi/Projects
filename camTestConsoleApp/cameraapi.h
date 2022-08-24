@@ -2,7 +2,6 @@
 #define CAMERAAPI_H
 
 #include <QObject>
-#include <QRunnable>
 #include <QUdpSocket>
 #include <QEventLoop>
 #include <QMutex>
@@ -14,7 +13,9 @@
 
 #define CAMERA_API_COMMAND_READXML (1)
 
-class cameraApi : public QObject, public QRunnable
+extern void camFreeAckMemory(strNonStdGvcpAckHdr& ackHeader);
+
+class cameraApi : public QObject
 {
     Q_OBJECT
 public:
@@ -29,24 +30,23 @@ public slots:
 
 public:
     /* Public functions that need to be exposed for applications. */
-    void run();
     bool cameraXmlReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr);
-    bool cameraXmlReadCameraAttribute(const QString feature, const QDomDocument& xmlFile);
+    bool cameraXmlReadCameraAttribute(const QList<QString>& featureList, const QDomDocument& xmlFile, const QHostAddress destAddr, QByteArray& regValues);
+    bool cameraWriteCameraAttribute(const QList<QString>& featureList, const QDomDocument& xmlFile, const QHostAddress destAddr, QByteArray& regValues);
+    bool cameraWriteRegisterValue(const QHostAddress &destAddr, const strGvcpCmdWriteRegHdr writeUnits[], const quint32 regsArraySize);
+    bool cameraDiscoverDevice(const QHostAddress& destAddr, strNonStdGvcpAckHdr& discHdr);
 
 private:
     /* Private camera functionalities for this API. */
     bool cameraFetchAck(strNonStdGvcpAckHdr& ack_hdr, const quint16 reqId);
     bool cameraReadMemoryBlock(const quint32 address, const quint16 size, const QHostAddress destAddr, QByteArray& returnedData);
-    bool cameraFetchXmlFromDevice(QByteArray fileName, QByteArray startAddress, QByteArray size, QHostAddress destAddr, QByteArray& xmlData);
+    bool cameraFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, const QHostAddress destAddr, QByteArray& xmlData);
     bool cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& byteArray);
-    bool cameraReadRegisterValue(const QHostAddress& destAddr, const quint32 regs[], quint32 regsArraySize, QByteArray& values);
-    bool cameraDiscoverDevice(const QHostAddress& destAddr);
+    bool cameraReadRegisterValue(const QHostAddress& destAddr, const QList<quint32> addressList, QByteArray& values);
 
     /* Private variables. */
-    /* This class will thread send/receive */
     QUdpSocket *mUdpSock;
-    QDomDocument mXmlDoc;
-    QVector<quint16> mVectorPendingReq;
+    QVector<quint8> mVectorPendingReq;
     QString mAddr;
     quint8 mCommand;
 };
