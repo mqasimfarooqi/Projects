@@ -20,6 +20,9 @@ void camFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
         case GVCP_READREG_ACK:
             delete((strGvcpAckRegReadHdr *)ackHeader.cmdSpecificAckHdr);
             break;
+        case GVCP_WRITEREG_ACK:
+            delete((strGvcpAckRegWriteHdr *)ackHeader.cmdSpecificAckHdr);
+            break;
         }
         ackHeader.cmdSpecificAckHdr = nullptr;
     }
@@ -87,12 +90,13 @@ void camMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray&
         ackHeader.ackHdrType = GVCP_READREG_ACK;
         ackHeader.cmdSpecificAckHdr = new strGvcpAckRegReadHdr();
         strGvcpAckRegReadHdr *readRegAckPtr = (strGvcpAckRegReadHdr *)ackHeader.cmdSpecificAckHdr;
+        readRegAckPtr->registerData = new quint32(ackHeader.genericAckHdr.length/sizeof(quint32));
 
         /* Copy contents from datagram into the read reg ack header. */
         quint32 tempVal = 0;
         for (quint32 counter = 0; counter < (ackHeader.genericAckHdr.length) / sizeof(quint32); counter++) {
             tempVal = qFromBigEndian(*(quint32 *)((quint32 *)dataPtr + strGvcpAckRegReadHdrREGISTERDATA + counter));
-            readRegAckPtr->registerData.append((char *)&tempVal, sizeof(quint32));
+            readRegAckPtr->registerData[counter] = tempVal;
         }
     } else if (ackHeader.genericAckHdr.acknowledge == GVCP_WRITEREG_ACK) {
 

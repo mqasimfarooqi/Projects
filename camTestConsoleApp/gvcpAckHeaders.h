@@ -104,7 +104,7 @@ typedef struct {
 #pragma pack(push, 1)
 typedef struct {
 
-    QByteArray registerData;
+    quint32 *registerData;
 
 } strGvcpAckRegReadHdr;
 #pragma pack(pop)

@@ -20,7 +20,7 @@ class cameraApi : public QObject
     Q_OBJECT
 public:
     explicit cameraApi(QObject *parent = nullptr);
-    cameraApi(QUdpSocket *udp_socket, QString addr, quint8 command);
+    cameraApi(QUdpSocket *udp_socket, QVector<quint8> *pendingReqVector);
 
 signals:
     void signalAckReceived();
@@ -30,10 +30,10 @@ public slots:
 
 public:
     /* Public functions that need to be exposed for applications. */
-    bool cameraXmlReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr);
-    bool cameraXmlReadCameraAttribute(const QList<QString>& featureList, const QDomDocument& xmlFile, const QHostAddress destAddr, QByteArray& regValues);
-    bool cameraWriteCameraAttribute(const QList<QString>& featureList, const QDomDocument& xmlFile, const QHostAddress destAddr, QByteArray& regValues);
-    bool cameraWriteRegisterValue(const QHostAddress &destAddr, const strGvcpCmdWriteRegHdr writeUnits[], const quint32 regsArraySize);
+    bool cameraReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr);
+    bool cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile, const QHostAddress destAddr, QList<quint32>& regValues);
+    bool cameraWriteRegisterValue(const QHostAddress &destAddr, const QList<strGvcpCmdWriteRegHdr>& writeUnits);
+    bool cameraReadRegisterValue(const QHostAddress& destAddr, const QList<quint32> addressList, QList<quint32>& regValues);
     bool cameraDiscoverDevice(const QHostAddress& destAddr, strNonStdGvcpAckHdr& discHdr);
 
 private:
@@ -42,13 +42,10 @@ private:
     bool cameraReadMemoryBlock(const quint32 address, const quint16 size, const QHostAddress destAddr, QByteArray& returnedData);
     bool cameraFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, const QHostAddress destAddr, QByteArray& xmlData);
     bool cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& byteArray);
-    bool cameraReadRegisterValue(const QHostAddress& destAddr, const QList<quint32> addressList, QByteArray& values);
 
     /* Private variables. */
     QUdpSocket *mUdpSock;
-    QVector<quint8> mVectorPendingReq;
-    QString mAddr;
-    quint8 mCommand;
+    QVector<quint8> *mVectorPendingReq;
 };
 
 #endif // CAMERAAPI_H

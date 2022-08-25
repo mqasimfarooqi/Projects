@@ -2,16 +2,11 @@
 #include "camerainterface.h"
 #include "quazip/JlCompress.h"
 
-cameraApi::cameraApi(QObject *parent)
-    : QObject{parent}
-{
-}
-
-cameraApi::cameraApi(QUdpSocket *udpSocket, QString addr, quint8 command)
+cameraApi::cameraApi(QObject *parent) : QObject{parent}{}
+cameraApi::cameraApi(QUdpSocket *udpSocket, QVector<quint8> *pendingReqVector)
 {
     mUdpSock = udpSocket;
-    mCommand = command;
-    mAddr = addr;
+    mVectorPendingReq = pendingReqVector;
 }
 
 void cameraApi::slotReadyRead()
@@ -19,7 +14,6 @@ void cameraApi::slotReadyRead()
 
     /* Emit the signal taht the ack has been received for a pending req_id. */
     emit signalAckReceived();
-
 }
 
 quint32 byteArrayToUint32(const QByteArray &bytes)
@@ -36,7 +30,7 @@ quint32 byteArrayToUint32(const QByteArray &bytes)
     return number;
 }
 
-bool cameraApi::cameraXmlReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr)
+bool cameraApi::cameraReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr)
 {
     bool error = false;
     QList<QByteArray> url;
@@ -97,14 +91,14 @@ bool cameraApi::cameraXmlReadXmlFileFromDevice(QDomDocument& xmlFile, const QHos
 }
 
 /* This function reads an attribute from the device using XML which was previously fetched. */
-bool cameraApi::cameraXmlReadCameraAttribute(const QList<QString>& featureList, const QDomDocument& xmlFile,
-                                             const QHostAddress destAddr, QByteArray& regValues)
+bool cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile,
+                                          const QHostAddress destAddr, QList<quint32>& registerValues)
 {
     bool error = false;
     bool featureFound;
     QDomElement root;
     QList<quint32> featureAddressList;
-    quint32 featureAddr[featureList.count()];
+    quint32 featureAddr[attributeList.count()];
 
     /* Initialize memory to 0. */
     memset(featureAddr, 0x00, sizeof(featureAddr));
@@ -119,7 +113,7 @@ bool cameraApi::cameraXmlReadCameraAttribute(const QList<QString>& featureList, 
         QDomNodeList items = root.elementsByTagName("Address");
 
         /* This for loops simply goes through the list of features that need to be fetched. */
-        for (quint16 featureCounter = 0; featureCounter < featureList.count(); featureCounter++) {
+        for (quint16 featureCounter = 0; featureCounter < attributeList.count(); featureCounter++) {
 
             /* Change the status to feature not found here. */
             featureFound = false;
@@ -131,7 +125,7 @@ bool cameraApi::cameraXmlReadCameraAttribute(const QList<QString>& featureList, 
                 QDomNode itemnode = items.at(iterator);
 
                 /* Check to see if the description of feature is same as provided in the list. */
-                if (!QString::compare(itemnode.parentNode().attributes().item(0).nodeValue(), featureList.at(featureCounter))) {
+                if (!QString::compare(itemnode.parentNode().attributes().item(0).nodeValue(), attributeList.at(featureCounter))) {
 
                     /* Feature has been found. */
                     featureFound = true;
@@ -143,21 +137,21 @@ bool cameraApi::cameraXmlReadCameraAttribute(const QList<QString>& featureList, 
 
             if (!featureFound) {
 
-                qDebug() << "Address for " << featureList.at(featureCounter) << " is not found in the XML file.";
+                qDebug() << "Address for " << attributeList.at(featureCounter) << " is not found in the XML file.";
             }
         }
 
         if (!error) {
 
             /* If error is not found, fetch register values. */
-            error = cameraReadRegisterValue(destAddr, featureAddressList, regValues);
+            error = cameraReadRegisterValue(destAddr, featureAddressList, registerValues);
         }
     }
 
     return error;
 }
 
-bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const strGvcpCmdWriteRegHdr writeUnits[], const quint32 regsArraySize)
+bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const QList<strGvcpCmdWriteRegHdr>& writeUnits)
 {
     bool error = false;
     QByteArray cmdSpecificData;
@@ -169,7 +163,7 @@ bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const str
     memset(&ackHdr, 0x00, sizeof(strNonStdGvcpAckHdr));
     cmdSpecificData.clear();
 
-    if (!writeUnits) {
+    if (writeUnits.isEmpty()) {
 
         qDebug() << "Error: No data is provided in the array to write.";
         error = true;
@@ -178,12 +172,12 @@ bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const str
     if (!error) {
 
         /* Copy data into the array. */
-        for (quint32 counter = 0; counter < regsArraySize; counter++) {
-            cmdSpecificData.append((char *)&writeUnits[counter], sizeof(strGvcpCmdWriteRegHdr));
+        for (int counter = 0; counter < writeUnits.length(); counter++) {
+            cmdSpecificData.append((char *)&writeUnits.at(counter), sizeof(strGvcpCmdWriteRegHdr));
         }
 
         /* Send command to the specified address. */
-        mVectorPendingReq.push_front(reqId);
+        mVectorPendingReq->push_front(reqId);
         error = CameraInterface::camSendCmd(mUdpSock, GVCP_WRITEREG_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
     }
 
@@ -223,8 +217,8 @@ bool cameraApi::cameraFetchAck(strNonStdGvcpAckHdr& ackHdr, const quint16 reqId)
     if ((ackHdr.genericAckHdr.ackId == reqId) && !error) {
 
         /* Remove the pending request ID stored in vector. */
-        mVectorPendingReq.removeOne(ackHdr.genericAckHdr.ackId);
-        mVectorPendingReq.squeeze();
+        mVectorPendingReq->removeOne(ackHdr.genericAckHdr.ackId);
+        mVectorPendingReq->squeeze();
 
         error = false;
 
@@ -265,7 +259,7 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
         cmdSpecificData.append((const char *)&readMemHdr, sizeof(readMemHdr));
 
         /* Send command to the specified address. */
-        mVectorPendingReq.push_front(reqId);
+        mVectorPendingReq->push_front(reqId);
         error = CameraInterface::camSendCmd(mUdpSock, GVCP_READMEM_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
 
         if (!error) {
@@ -351,7 +345,7 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
     cmdSpecificData.append((const char *)&cmdHdr, sizeof(cmdHdr));
 
     /* Send command to the specified address. */
-    mVectorPendingReq.push_front(reqId);
+    mVectorPendingReq->push_front(reqId);
     error = CameraInterface::camSendCmd(mUdpSock, GVCP_READMEM_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
 
     if (!error) {
@@ -385,7 +379,7 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
     return error;
 }
 
-bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QList<quint32> addressList, QByteArray& values)
+bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QList<quint32> addressList, QList<quint32>& regValues)
 {
     bool error = false;
     QByteArray cmdSpecificData;
@@ -423,7 +417,7 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
         delete(regReadCmdHdr.registerAddress);
 
         /* Send command to the specified address. */
-        mVectorPendingReq.push_front(reqId);
+        mVectorPendingReq->push_front(reqId);
         error = CameraInterface::camSendCmd(mUdpSock, GVCP_READREG_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
     }
 
@@ -448,11 +442,10 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
         /* Now we have first URL. */
         regReadAckHdr = (strGvcpAckRegReadHdr *)ackHdr.cmdSpecificAckHdr;
 
-        /* Clear the bytearray before writing data. */
-        values.clear();
-
-        /* Append data into the byte array, and return it. */
-        values.append(regReadAckHdr->registerData);
+        /* Append register values received from the camera. */
+        for (quint16 counter = 0; counter < ackHdr.genericAckHdr.length/sizeof(quint32); counter++) {
+            regValues.append(regReadAckHdr->registerData[counter]);
+        }
 
         /* Free memory allocated by ack header. */
         camFreeAckMemory(ackHdr);
@@ -484,7 +477,7 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress& addr, strNonStdGvcpAckH
         cmdSpecificData.clear();
 
         /* Send command to the specified address. */
-        mVectorPendingReq.push_front(reqId);
+        mVectorPendingReq->push_front(reqId);
         error = CameraInterface::camSendCmd(mUdpSock, GVCP_DISCOVERY_CMD, cmdSpecificData, addr, GVCP_DEFAULT_UDP_PORT, reqId);
     }
 
