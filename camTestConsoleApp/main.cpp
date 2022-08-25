@@ -88,8 +88,8 @@ int main(int argc, char *argv[])
                 if (error) {
                     qDebug() << "Command failed";
                 } else {
-                    for (int i = 0; i < featureList.count(); i++) {
-                        if (!featureList.at(i).isNull()) {
+                    for (int i = 0; i < regValues.count(); i++) {
+                        if (regValues.at(i)) {
                             qDebug() << featureList.at(i) << " = " << regValues.at(i);
                         }
                     }

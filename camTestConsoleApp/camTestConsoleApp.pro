@@ -14,7 +14,8 @@ unix {
 
 SOURCES += \
         cameraapi.cpp \
-        camerainterface.cpp \
+        caminterface.cpp \
+        gvcp/gvcp.cpp \
         main.cpp \
         quazip/JlCompress.cpp \
         quazip/qioapi.cpp \
@@ -38,10 +39,11 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     cameraapi.h \
-    camerainterface.h \
-    gvcpAckHeaders.h \
-    gvcpCmdHeaders.h \
-    gvcpHeaders.h \
+    caminterface.h \
+    gvcp/gvcp.h \
+    gvcp/gvcpAckHeaders.h \
+    gvcp/gvcpCmdHeaders.h \
+    gvcp/gvcpHeaders.h \
     quazip/JlCompress.h \
     quazip/ioapi.h \
     quazip/minizip_crypt.h \

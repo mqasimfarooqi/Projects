@@ -2,7 +2,6 @@
 #define GVCPHEADERS_H
 
 #include <QObject>
-#include <QtEndian>
 #include "gvcpAckHeaders.h"
 #include "gvcpCmdHeaders.h"
 

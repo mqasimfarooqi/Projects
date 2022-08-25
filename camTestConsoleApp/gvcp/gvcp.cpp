@@ -1,13 +1,13 @@
-#include "camerainterface.h"
+#include "gvcp.h"
 
-unsigned char reverseBits(unsigned char b) {
+unsigned char gvcpHelperReverseBits(unsigned char b) {
    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
    return b;
 }
 
-void camFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
+void gvcpHelperFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
 
     if (ackHeader.cmdSpecificAckHdr != nullptr) {
         switch (ackHeader.genericAckHdr.acknowledge) {
@@ -28,7 +28,7 @@ void camFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
     }
 }
 
-void camMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray) {
+void gvcpHelperMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray) {
 
     char *dataPtr = dataArray.data() + sizeof(strGvcpAckHdr);
 
@@ -111,7 +111,7 @@ void camMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray&
     }
 }
 
-void camMakeCmdSepcificCmdHeader(QByteArray& datagram, const quint16 cmdType, const QByteArray& cmdSpecificData) {
+void gvcpHelperMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmdType, const QByteArray& cmdSpecificData) {
 
     const char *dataPtr = cmdSpecificData.data();
 
@@ -127,7 +127,7 @@ void camMakeCmdSepcificCmdHeader(QByteArray& datagram, const quint16 cmdType, co
             regAddr = qToBigEndian(*((quint32 *)dataPtr + counter));
 
             /* Append data to the datagram. */
-            datagram.append((char *)&regAddr, sizeof(quint32));
+            dataArray.append((char *)&regAddr, sizeof(quint32));
         }
 
     } else if (cmdType == GVCP_READMEM_CMD) {
@@ -139,7 +139,7 @@ void camMakeCmdSepcificCmdHeader(QByteArray& datagram, const quint16 cmdType, co
         readMemHdr.count = qToBigEndian(*(quint16 *)(dataPtr + strGvcpCmdReadMemHdrCOUNT));
 
         /* Append data to the datagram. */
-        datagram.append((char *)&readMemHdr, sizeof(strGvcpCmdReadMemHdr));
+        dataArray.append((char *)&readMemHdr, sizeof(strGvcpCmdReadMemHdr));
 
     } else if (cmdType == GVCP_WRITEREG_CMD) {
         strGvcpCmdWriteRegHdr writeRegHdr[cmdSpecificData.length()/sizeof(strGvcpCmdWriteRegHdr)];
@@ -152,13 +152,12 @@ void camMakeCmdSepcificCmdHeader(QByteArray& datagram, const quint16 cmdType, co
 
         /* Append data to the datagram. */
         for (quint32 counter = 0; counter < cmdSpecificData.length()/sizeof(strGvcpCmdWriteRegHdr); counter++) {
-            datagram.append((char *)&writeRegHdr[counter], sizeof(strGvcpCmdReadMemHdr));
+            dataArray.append((char *)&writeRegHdr[counter], sizeof(strGvcpCmdReadMemHdr));
         }
     }
 }
 
-void camMakeGenericCmdHeader(const quint16 cmdType, QByteArray& datagram,
-                             const QByteArray& cmdSpecificData, const quint16 reqId) {
+void gvcpHelperMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray, const QByteArray& cmdSpecificData, const quint16 reqId) {
 
     strGvcpCmdHdr genericHdr;
 
@@ -170,22 +169,22 @@ void camMakeGenericCmdHeader(const quint16 cmdType, QByteArray& datagram,
 
     case GVCP_DISCOVERY_CMD:
         /* Construct generic header for command [GVCP_DISCOVERY_CMD]. */
-        genericHdr.flag = reverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE | GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK);
+        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE | GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK);
         break;
 
     case GVCP_READMEM_CMD:
         /* Construct generic header for command [GVCP_READMEM_CMD]. */
-        genericHdr.flag = reverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
+        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
         break;
 
     case GVCP_WRITEREG_CMD:
         /* Construct generic header for command [GVCP_WRITEREG_CMD]. */
-        genericHdr.flag = reverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
+        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
         break;
 
     case GVCP_READREG_CMD:
         /* Construct generic header for command [GVCP_READREG_CMD]. */
-        genericHdr.flag = reverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
+        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
         break;
     }
 
@@ -197,75 +196,16 @@ void camMakeGenericCmdHeader(const quint16 cmdType, QByteArray& datagram,
     genericHdr.reqId = qToBigEndian(reqId);
 
     /* Append generic header to the datagram. */
-    datagram.append((char *)&genericHdr, sizeof(genericHdr));
+    dataArray.append((char *)&genericHdr, sizeof(genericHdr));
 }
 
-/* This function populates the relevant headers sends the packet. */
-bool CameraInterface::camSendCmd(QUdpSocket *udpSock, const quint16 cmdType,
-                                 const QByteArray& cmdSpecificData,
-                                 const QHostAddress& destAddr,
-                                 const quint16 port, const quint16 reqId) {
-
-    bool error = false;
-    QByteArray datagram = { 0 };
-
-    /* Check to see if the pointer is not null. */
-    if (!udpSock->isValid()) {
-        error = true;
-        qDebug() << "Error: Udp socket pointer is invalid.";
-    }
-
-    if (!error) {
-
-        /* Popoulate the generic header with data. */
-        camMakeGenericCmdHeader(cmdType, datagram, cmdSpecificData, reqId);
-
-        /* Guarding checks to see if we have valid data in the buffer. */
-        if (!error) {
-
-            /* Append only if data length is greater than 0. */
-            if (cmdSpecificData.length() > 0) {
-
-                /* Populate command specific headers and append in the array. */
-                camMakeCmdSepcificCmdHeader(datagram, cmdType, cmdSpecificData);
-            }
-        }
-
-        /* Write datagram to the udp socket. */
-        if(!(udpSock->writeDatagram(datagram, destAddr, port) > 0)) {
-
-            qDebug() << "Error: Error sending datagram.";
-            error = true;
-        }
-    }
-
-    return error;
-}
-
-bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ackHeader) {
+bool gvcpReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ackHeader) {
     bool error = false;
     QByteArray tempArray;
     QNetworkDatagram datagram = { 0 };
 
-    /* Check to see if the pointer is not null. */
-    if (!udpSock->isValid() && !!(udpSock->hasPendingDatagrams())) {
-
-        error = true;
-        qDebug() << "Error: Udp socket pointer is invalid.";
-
-    } else {
-
-        /* Valid datagrams are waiting to be read. */
-        datagram = udpSock->receiveDatagram();
-
-        if (!datagram.isValid()) {
-
-            qDebug() << "Error: Datagram received is not a valid datagram.";
-
-            /* Set error to true because datagram is invalid. */
-            error = true;
-        }
-    }
+    /* Receive datagram. */
+    error = caminterface::camGigeVReceiveAck(udpSock, datagram);
 
     if (!error && datagram.data().length()) {
 
@@ -283,7 +223,7 @@ bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ac
 
     if (!error && (ackHeader.genericAckHdr.length > 0) && tempArray.length()) {
 
-        camMakeCommandSpecificAckHeader(ackHeader, tempArray);
+        gvcpHelperMakeCommandSpecificAckHeader(ackHeader, tempArray);
     } else {
 
         qDebug() << "Error: Command specific data in an ack cannot be empty";
@@ -296,51 +236,50 @@ bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ac
         if (ackHeader.cmdSpecificAckHdr) {
 
             /* Free the required memory in case of error. */
-            camFreeAckMemory(ackHeader);
+            gvcpHelperFreeAckMemory(ackHeader);
         }
     }
 
     return (error);
 }
 
-bool CameraInterface::camReceiveAck(QUdpSocket *udpSock, QByteArray& rawSocketData)
+bool gvcpSendCmd(QUdpSocket *udpSock, const quint16 cmdType, const QByteArray &cmdSpecificData,
+                 const QHostAddress &destAddr, const quint16 port, const quint16 reqId)
 {
-    bool                    error = false;
-    QNetworkDatagram        datagram = { 0 };
+    bool error = false;
+    QNetworkDatagram datagram;
+    QByteArray dataArray;
 
     /* Check to see if the pointer is not null. */
     if (!udpSock->isValid()) {
         error = true;
-        qDebug() << "mUdpSock pointer is invalid.";
+        qDebug() << "Error: Udp socket pointer is invalid.";
     }
 
     if (!error) {
-        /* Enter only if mUdpSock is a valid pointer. */
 
-        if (!(udpSock->hasPendingDatagrams())) {
+        /* Popoulate the generic header with data. */
+        gvcpHelperMakeGenericCmdHeader(cmdType, dataArray, cmdSpecificData, reqId);
 
-            /* No datagrams are waiting to be read. */
-            error = true;
+        /* Append only if data length is greater than 0. */
+        if (cmdSpecificData.length() > 0) {
 
-        } else {
-
-            /* Valid datagrams are waiting to be read. */
-            datagram = udpSock->receiveDatagram();
+            /* Populate command specific headers and append in the array. */
+            gvcpHelperMakeCmdSepcificCmdHeader(dataArray, cmdType, cmdSpecificData);
         }
-    }
 
-    if (!(datagram.isValid())) {
-
-        /* Set error to true because datagram is invalid. */
-        error = true;
-    }
-
-    if (!error) {
-        /* Enter here only if the received datagram is valid. */
-
-        rawSocketData.append(datagram.data());
+        datagram.setDestination(destAddr, port);
+        datagram.setData(dataArray);
+        error = caminterface::camGigeVSendCmd(udpSock, datagram);
     }
 
     return error;
 }
+
+
+
+
+
+
+
 

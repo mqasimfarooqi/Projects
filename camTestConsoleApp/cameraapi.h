@@ -3,17 +3,13 @@
 
 #include <QObject>
 #include <QUdpSocket>
-#include <QEventLoop>
-#include <QMutex>
 #include <QString>
 #include <QFile>
 #include <QtXml>
-#include <QThreadPool>
-#include "gvcpHeaders.h"
+#include "gvcp/gvcpHeaders.h"
+#include "gvcp/gvcp.h"
 
 #define CAMERA_API_COMMAND_READXML (1)
-
-extern void camFreeAckMemory(strNonStdGvcpAckHdr& ackHeader);
 
 class cameraApi : public QObject
 {

@@ -1,5 +1,5 @@
 #include "cameraapi.h"
-#include "camerainterface.h"
+#include "gvcp/gvcp.h"
 #include "quazip/JlCompress.h"
 
 cameraApi::cameraApi(QObject *parent) : QObject{parent}{}
@@ -98,10 +98,9 @@ bool cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList, c
     bool featureFound;
     QDomElement root;
     QList<quint32> featureAddressList;
-    quint32 featureAddr[attributeList.count()];
 
-    /* Initialize memory to 0. */
-    memset(featureAddr, 0x00, sizeof(featureAddr));
+    /* Initialize list. */
+    featureAddressList.clear();
 
     /* Check to see if this function is provided with a valid XML file. */
     if (xmlFile.isDocument()) {
@@ -178,7 +177,7 @@ bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const QLi
 
         /* Send command to the specified address. */
         mVectorPendingReq->push_front(reqId);
-        error = CameraInterface::camSendCmd(mUdpSock, GVCP_WRITEREG_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
+        error = gvcpSendCmd(mUdpSock, GVCP_WRITEREG_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
     }
 
     if (!error) {
@@ -200,7 +199,7 @@ bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const QLi
     if (!error && ackHdr.cmdSpecificAckHdr) {
 
         /* Free memory allocated by ack header. */
-        camFreeAckMemory(ackHdr);
+        gvcpHelperFreeAckMemory(ackHdr);
     }
 
     return error;
@@ -211,7 +210,7 @@ bool cameraApi::cameraFetchAck(strNonStdGvcpAckHdr& ackHdr, const quint16 reqId)
     bool error = true;
 
     /* Receive the next pending ack. */
-    error = CameraInterface::camReceiveAck(mUdpSock, ackHdr);
+    error = gvcpReceiveAck(mUdpSock, ackHdr);
 
     /* If correct ack is received */
     if ((ackHdr.genericAckHdr.ackId == reqId) && !error) {
@@ -227,7 +226,7 @@ bool cameraApi::cameraFetchAck(strNonStdGvcpAckHdr& ackHdr, const quint16 reqId)
         if (ackHdr.cmdSpecificAckHdr) {
 
             /* Free memory space acquired by command specific ack header for packed with undesired req_id. */
-            camFreeAckMemory(ackHdr);
+            gvcpHelperFreeAckMemory(ackHdr);
         }
     }
 
@@ -260,7 +259,7 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
 
         /* Send command to the specified address. */
         mVectorPendingReq->push_front(reqId);
-        error = CameraInterface::camSendCmd(mUdpSock, GVCP_READMEM_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
+        error = gvcpSendCmd(mUdpSock, GVCP_READMEM_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
 
         if (!error) {
 
@@ -303,7 +302,7 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
             /* Free up memory space acquired by command specific header. */
             if (ackHdr.cmdSpecificAckHdr) {
 
-                camFreeAckMemory(ackHdr);
+                gvcpHelperFreeAckMemory(ackHdr);
             }
 
             /* Increase the request ID for next transation. */
@@ -346,7 +345,7 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
 
     /* Send command to the specified address. */
     mVectorPendingReq->push_front(reqId);
-    error = CameraInterface::camSendCmd(mUdpSock, GVCP_READMEM_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
+    error = gvcpSendCmd(mUdpSock, GVCP_READMEM_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
 
     if (!error) {
 
@@ -373,7 +372,7 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
         byteArray.append(readMemAckHdr->data);
 
         /* Free memory allocated by ack header. */
-        camFreeAckMemory(ackHdr);
+        gvcpHelperFreeAckMemory(ackHdr);
     }
 
     return error;
@@ -418,7 +417,7 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
 
         /* Send command to the specified address. */
         mVectorPendingReq->push_front(reqId);
-        error = CameraInterface::camSendCmd(mUdpSock, GVCP_READREG_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
+        error = gvcpSendCmd(mUdpSock, GVCP_READREG_CMD, cmdSpecificData, destAddr, GVCP_DEFAULT_UDP_PORT, reqId);
     }
 
     if (!error) {
@@ -448,7 +447,7 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
         }
 
         /* Free memory allocated by ack header. */
-        camFreeAckMemory(ackHdr);
+        gvcpHelperFreeAckMemory(ackHdr);
     }
 
     return error;
@@ -478,7 +477,7 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress& addr, strNonStdGvcpAckH
 
         /* Send command to the specified address. */
         mVectorPendingReq->push_front(reqId);
-        error = CameraInterface::camSendCmd(mUdpSock, GVCP_DISCOVERY_CMD, cmdSpecificData, addr, GVCP_DEFAULT_UDP_PORT, reqId);
+        error = gvcpSendCmd(mUdpSock, GVCP_DISCOVERY_CMD, cmdSpecificData, addr, GVCP_DEFAULT_UDP_PORT, reqId);
     }
 
     if (!error) {

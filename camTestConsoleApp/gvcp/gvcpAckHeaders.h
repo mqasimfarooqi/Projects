@@ -2,7 +2,6 @@
 #define GVCPACKHEADERS_H
 
 #include <QObject>
-#include <QtEndian>
 
 enum {
 

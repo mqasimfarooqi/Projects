@@ -2,7 +2,6 @@
 #define GVCPCMDHEADERS_H
 
 #include <QObject>
-#include <QtEndian>
 
 enum {
     strGvcpCmdReadMemHdrADDRESS = 0,
@@ -41,14 +40,6 @@ typedef struct {
 
 } strGvcpCmdWriteRegHdr;
 #pragma pack(pop)
-
-///* Write register command header. */
-//#pragma pack(push, 1)
-//typedef struct {
-//    strGvcpCmdWriteRegHdrUnit *writeRegUnit;
-
-//} strGvcpCmdWriteRegHdr;
-//#pragma pack(pop)
 
 /* Read register command header. */
 #pragma pack(push, 1)
