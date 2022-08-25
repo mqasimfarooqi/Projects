@@ -124,13 +124,17 @@ bool cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList, c
                 QDomNode itemnode = items.at(iterator);
 
                 /* Check to see if the description of feature is same as provided in the list. */
-                if (!QString::compare(itemnode.parentNode().attributes().item(0).nodeValue(), attributeList.at(featureCounter))) {
+                if (!QString::compare(itemnode.parentNode().attributes().namedItem("Name").nodeValue(), attributeList.at(featureCounter))) {
 
                     /* Feature has been found. */
                     featureFound = true;
 
                     /* Correct feature has been found, so take its address and store it in a buffer after converting to unsigned integer. */
                     featureAddressList.append(byteArrayToUint32(QByteArray::fromHex(QByteArray::fromStdString(itemnode.childNodes().item(0).nodeValue().toStdString()))));
+
+//                    for (int i = 0; i < itemnode.parentNode().childNodes().count(); i++) {
+//                        qDebug() << itemnode.parentNode().childNodes().item(i).nodeName();
+//                    }
                 }
             }
 

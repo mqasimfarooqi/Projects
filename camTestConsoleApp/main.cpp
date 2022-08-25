@@ -20,8 +20,10 @@ int main(int argc, char *argv[])
     cam_api = new cameraApi(&m_sock, &pendingReqVec);
 
     featureList.append("DeviceVendorName");
-    featureList.append("DeviceUserID");
     featureList.append("GevMCPHostPortReg");
+    featureList.append("DeviceManufacturerInfo");
+    featureList.append("DeviceVersion");
+    featureList.append("DeviceSerialNumber");
 
     /* Bind UDP socket to an address. */
     bindAddr.setAddress("172.19.17.20");
