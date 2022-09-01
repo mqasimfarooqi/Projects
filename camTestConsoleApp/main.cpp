@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
     qDebug() << "Watch output on wireshark";
 
     while(!error) {
+
         option = std::getchar();
 
         switch (option) {
