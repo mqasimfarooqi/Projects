@@ -571,10 +571,6 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress& addr, strGvcpAckDiscove
         qDebug() << "Error: Acknowledgement packet is not received.";
     }
 
-    /* Disconnect before exiting. */
-    mUdpSock->disconnect();
-    this->disconnect();
-
     return error;
 }
 
