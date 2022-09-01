@@ -111,8 +111,7 @@ bool cameraApi::cameraReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAd
 
 /* This function reads an attribute from the device using XML which was previously fetched. */
 bool cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile,
-                                          const QHostAddress destAddr, QList<QByteArray>& registerValues)
-{
+                                          const QHostAddress destAddr, QList<QByteArray>& registerValues) {
     bool error = false;
     QDomElement root;
     QDomNodeList tempList;
@@ -153,6 +152,8 @@ bool cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList, c
             if (!error) {
                 /* Fetch the child element of node with the name "Address" */
                 error = fetchChildElementValue(tempNode, "Address", tempStr);
+
+                qDebug() << "Address of " << attributeList.at(var) << " = " << tempStr;
 
                 if (!error) {
                     /* Convert address to uint32. */

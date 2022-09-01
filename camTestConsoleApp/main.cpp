@@ -41,24 +41,20 @@ int main(int argc, char *argv[])
 
     cam_api = new cameraApi(&m_sock, &pendingReqVec);
 
-    featureList.append("DeviceModelName");
-    featureList.append("DeviceManufacturerInfo");
-    featureList.append("DeviceVersion");
-    featureList.append("DeviceSerialNumber");
-    featureList.append("CameraAttributesReg");
-    featureList.append("TriggerOverlapReg");
-    featureList.append("TriggerTypeReg");
-    featureList.append("DeviceUserID");
-    featureList.append("BinningVerticalReg");
-    featureList.append("DecimationHorizontalReg");
-    featureList.append("FixedFramePeriodValueReg");
-    featureList.append("MinFrameTimeReg");
-    featureList.append("CurrentFrameTimeReg");
-    featureList.append("CurrentFrameReadOutTimeLinesReg");
-    featureList.append("CurrentLineTimePClocksReg");
-    featureList.append("CurrentLineTimeSecondsReg");
-    featureList.append("TriggerModeReg");
-    featureList.append("TriggerSoftwareReg");
+    featureList.append("GevCCPReg"); //gigeCCPReg
+    featureList.append("GevHeartbeatTimeoutReg"); //gigeHeartBeatReg
+    featureList.append("GevSCPHostPortReg"); //gigeStreamChannelPortReg
+    featureList.append("GevSCDAReg"); //gigeStreamChannelDestinationReg
+    featureList.append("GevSCSPReg"); //gigeStreamChannelSourcePortReg
+    featureList.append("GevSCPSPacketSizeReg"); //gigeStreamChannelPacketSizeReg
+    featureList.append("GevSCPDReg"); //gigeStreamChannelPacketDelayReg
+    featureList.append("AcquisitionModeReg"); //gigeAquisitionModeReg
+    featureList.append("AcquisitionStartReg"); //gigeAquisitionStartReg
+    featureList.append("AcquisitionStopReg"); //gigeAquisitionStopReg
+    featureList.append("OffsetXReg"); //gigeSensorOffSetXReg
+    featureList.append("OffsetYReg"); //gigeSensorOffSetYReg
+    featureList.append("HeightReg"); //gigeSensorHeightSelectionRegDL
+    featureList.append("WidthReg"); //gigeSensorWidthSelectionRegDL
 
     readReg.registerAddress = 0xa00;
     regAddresses.append(readReg);
@@ -140,7 +136,7 @@ int main(int argc, char *argv[])
                 } else {
                     for (int i = 0; i < camAttributes.count(); i++) {
                         if (!camAttributes.at(i).isEmpty()) {
-                            qDebug() << featureList.at(i) << " = " << camAttributes.at(i);
+                            //qDebug() << featureList.at(i) << " = " << camAttributes.at(i);
                         }
                     }
                 }

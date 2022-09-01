@@ -12,7 +12,8 @@
 const QList<QString> lookupTags = {
     "IntReg",
     "Integer",
-    "StringReg"
+    "StringReg",
+    "MaskedIntReg"
 };
 
 class cameraApi : public QObject
