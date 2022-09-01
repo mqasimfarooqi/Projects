@@ -1,4 +1,5 @@
 #include "gvcp.h"
+#include "caminterface.h"
 
 unsigned char gvcpHelperReverseBits(unsigned char b) {
    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;

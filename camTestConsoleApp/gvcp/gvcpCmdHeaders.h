@@ -44,7 +44,7 @@ typedef struct {
 /* Read register command header. */
 #pragma pack(push, 1)
 typedef struct {
-    quint32 *registerAddress;
+    quint32 registerAddress;
 
 } strGvcpCmdReadRegHdr;
 #pragma pack(pop)

@@ -3,13 +3,17 @@
 
 #include <QObject>
 #include <QUdpSocket>
-#include <QString>
-#include <QFile>
 #include <QtXml>
+#include <QDateTime>
 #include "gvcp/gvcpHeaders.h"
-#include "gvcp/gvcp.h"
 
 #define CAMERA_API_COMMAND_READXML (1)
+
+const QList<QString> lookupTags = {
+    "IntReg",
+    "Integer",
+    "StringReg"
+};
 
 class cameraApi : public QObject
 {
@@ -27,10 +31,10 @@ public slots:
 public:
     /* Public functions that need to be exposed for applications. */
     bool cameraReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr);
-    bool cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile, const QHostAddress destAddr, QList<quint32>& regValues);
+    bool cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile, const QHostAddress destAddr, QList<QByteArray>& regValues);
     bool cameraWriteRegisterValue(const QHostAddress &destAddr, const QList<strGvcpCmdWriteRegHdr>& writeUnits);
-    bool cameraReadRegisterValue(const QHostAddress& destAddr, const QList<quint32> addressList, QList<quint32>& regValues);
-    bool cameraDiscoverDevice(const QHostAddress& destAddr, strNonStdGvcpAckHdr& discHdr);
+    bool cameraReadRegisterValue(const QHostAddress& destAddr, const QList<strGvcpCmdReadRegHdr> addressList, QList<quint32>& regValues);
+    bool cameraDiscoverDevice(const QHostAddress& destAddr, strGvcpAckDiscoveryHdr& discHdr);
 
 private:
     /* Private camera functionalities for this API. */
@@ -38,6 +42,7 @@ private:
     bool cameraReadMemoryBlock(const quint32 address, const quint16 size, const QHostAddress destAddr, QByteArray& returnedData);
     bool cameraFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, const QHostAddress destAddr, QByteArray& xmlData);
     bool cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& byteArray);
+    bool cameraXmlFetchAttrElement(const QString& attributeName, const QMap<QString, QDomNodeList>& camFeatures, QDomNode& node);
 
     /* Private variables. */
     QUdpSocket *mUdpSock;

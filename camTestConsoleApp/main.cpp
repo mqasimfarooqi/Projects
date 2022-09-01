@@ -1,6 +1,14 @@
 #include <QCoreApplication>
 #include "cameraapi.h"
 
+#ifdef GIT_TRACKED
+const QString gitCommitHash = GIT_COMMIT_HASH;
+const QString gitCommitDate = GIT_COMMIT_DATE;
+const QString gitBranch = GIT_BRANCH;
+const QString buildDate = __DATE__;
+const QString buildTime = __TIME__;
+#endif
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -8,50 +16,90 @@ int main(int argc, char *argv[])
     QUdpSocket m_sock;
     QHostAddress bindAddr, destAddr;
     QList<QString> featureList;
-    strNonStdGvcpAckHdr discHdr;
+    strGvcpAckDiscoveryHdr discHdr;
     QDomDocument XmlDoc;
     QList<strGvcpCmdWriteRegHdr> writeUnit;
     bool error = false, xmlRead = false;
     char option;
     QVector<quint8> pendingReqVec;
+    QList<QByteArray> camAttributes;
     QList<quint32> regValues;
-    strGvcpCmdWriteRegHdr temp;
+    QList<strGvcpCmdReadRegHdr> regAddresses;
+    strGvcpCmdWriteRegHdr writeReg;
+    strGvcpCmdReadRegHdr readReg;
+
+#ifdef GIT_TRACKED
+    qDebug() << "Git Commit Hash = " << gitCommitHash;
+    qDebug() << "Git Commit Date = " << gitCommitDate;
+    qDebug() << "Git Branch = " << gitBranch;
+    qDebug() << "Build Date = " << buildDate;
+    qDebug() << "Build Time = " << buildTime;
+    qDebug() << "";
+#else
+    qDebug() << "This project is not tracked.";
+#endif
 
     cam_api = new cameraApi(&m_sock, &pendingReqVec);
 
-    featureList.append("DeviceVendorName");
-    featureList.append("GevMCPHostPortReg");
+    featureList.append("DeviceModelName");
     featureList.append("DeviceManufacturerInfo");
     featureList.append("DeviceVersion");
     featureList.append("DeviceSerialNumber");
+    featureList.append("CameraAttributesReg");
+    featureList.append("TriggerOverlapReg");
+    featureList.append("TriggerTypeReg");
+    featureList.append("DeviceUserID");
+    featureList.append("BinningVerticalReg");
+    featureList.append("DecimationHorizontalReg");
+    featureList.append("FixedFramePeriodValueReg");
+    featureList.append("MinFrameTimeReg");
+    featureList.append("CurrentFrameTimeReg");
+    featureList.append("CurrentFrameReadOutTimeLinesReg");
+    featureList.append("CurrentLineTimePClocksReg");
+    featureList.append("CurrentLineTimeSecondsReg");
+    featureList.append("TriggerModeReg");
+    featureList.append("TriggerSoftwareReg");
+
+    readReg.registerAddress = 0xa00;
+    regAddresses.append(readReg);
+
+    readReg.registerAddress = 0x960;
+    regAddresses.append(readReg);
+
+    readReg.registerAddress = 0x0A8;
+    regAddresses.append(readReg);
+
+    readReg.registerAddress = 0x934;
+    regAddresses.append(readReg);
 
     /* Bind UDP socket to an address. */
-    bindAddr.setAddress("172.19.17.20");
+    bindAddr.setAddress("192.168.10.3");
     if (!(m_sock.bind(bindAddr, 55455))) {
 
         qDebug() << "Could not bind socket to an address/port.";
         error = true;
     }
 
-    temp.registerAddress = 0xa00;
-    temp.registerData = 0x2;
-    writeUnit.append(temp);
+    writeReg.registerAddress = 0xa00;
+    writeReg.registerData = 0x2;
+    writeUnit.append(writeReg);
 
-    temp.registerAddress = 0xb00;
-    temp.registerData = 0xa9da;
-    writeUnit.append(temp);
+    writeReg.registerAddress = 0xb00;
+    writeReg.registerData = 0xa9da;
+    writeUnit.append(writeReg);
 
-    temp.registerAddress = 0xb00;
-    temp.registerData = 0xa9da;
-    writeUnit.append(temp);
+    writeReg.registerAddress = 0xb00;
+    writeReg.registerData = 0xa9da;
+    writeUnit.append(writeReg);
 
     /* Set address where the packet should be sent. */
-    destAddr.setAddress("172.19.17.21");
+    destAddr.setAddress("192.168.10.18");
 
     qDebug() << "0 -> Test discover device";
-    qDebug() << "1 -> Test read register command";
+    qDebug() << "1 -> Test read attribute command";
     qDebug() << "2 -> Test write register command";
     qDebug() << "3 -> Test read xml file";
+    qDebug() << "4 -> Test read register command";
     qDebug() << "-----------------------------";
     qDebug() << "Watch output on wireshark";
 
@@ -64,39 +112,38 @@ int main(int argc, char *argv[])
             if (error) {
                 qDebug() << "Command failed";
             } else {
-                qDebug() << "manufacturerSpecificInfo" << QByteArray::fromRawData((char *)((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->manufacturerSpecificInfo, 48);
-                qDebug() << "manufacturerName = "  << QByteArray::fromRawData((char *)((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->manufacturerName, 32);
-                qDebug() << "modelName = "  << QByteArray::fromRawData((char *)((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->modelName, 32);
-                qDebug() << "userDefinedName = "  << QByteArray::fromRawData((char *)((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->userDefinedName, 16);
-                qDebug() << "currentIp = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->currentIp;
-                qDebug() << "defaultGateway = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->defaultGateway;
-                qDebug() << "deviceMacAddrHigh = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->deviceMacAddrHigh;
-                qDebug() << "deviceMacAddrLow = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->deviceMacAddrLow;
-                qDebug() << "deviceMode = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->deviceMode;
-                qDebug() << "deviceVersion = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->deviceVersion;
-                qDebug() << "specVersionMajor = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->specVersionMajor;
-                qDebug() << "specVersionMinor = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->specVersionMinor;
-                qDebug() << "ipConfigCurrent = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->ipConfigCurrent;
-                qDebug() << "ipConfigOptions = "  << ((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->ipConfigOptions;
-                qDebug() << "serialNumber = "  << QByteArray::fromRawData((char *)((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->serialNumber, 16);
-                qDebug() << "userDefinedName = "  << QByteArray::fromRawData((char *)((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr)->userDefinedName, 16);
+                qDebug() << "currentIp = "  << discHdr.currentIp;
+                qDebug() << "defaultGateway = "  << discHdr.defaultGateway;
+                qDebug() << "deviceMacAddrHigh = "  << discHdr.deviceMacAddrHigh;
+                qDebug() << "deviceMacAddrLow = "  << discHdr.deviceMacAddrLow;
+                qDebug() << "deviceMode = "  << discHdr.deviceMode;
+                qDebug() << "specVersionMajor = "  << discHdr.specVersionMajor;
+                qDebug() << "specVersionMinor = "  << discHdr.specVersionMinor;
+                qDebug() << "ipConfigCurrent = "  << discHdr.ipConfigCurrent;
+                qDebug() << "ipConfigOptions = "  << discHdr.ipConfigOptions;
+                qDebug() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
+                qDebug() << "serialNumber = "  << QByteArray::fromRawData((char *)&discHdr.serialNumber, 16);
+                qDebug() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
+                qDebug() << "deviceVersion = "  << QByteArray::fromRawData((char *)&discHdr.deviceVersion, 32);
+                qDebug() << "manufacturerName = "  << QByteArray::fromRawData((char *)&discHdr.manufacturerName, 32);
+                qDebug() << "modelName = "  << QByteArray::fromRawData((char *)&discHdr.modelName, 32);
+                qDebug() << "manufacturerSpecificInfo" << QByteArray::fromRawData((char *)&discHdr.manufacturerSpecificInfo, 48);
             }
-            delete((strGvcpAckDiscoveryHdr *)discHdr.cmdSpecificAckHdr);
             break;
 
         case '1':
             if (xmlRead) {
-                error = cam_api->cameraReadCameraAttribute(featureList, XmlDoc, destAddr, regValues);
+                error = cam_api->cameraReadCameraAttribute(featureList, XmlDoc, destAddr, camAttributes);
                 if (error) {
                     qDebug() << "Command failed";
                 } else {
-                    for (int i = 0; i < regValues.count(); i++) {
-                        if (regValues.at(i)) {
-                            qDebug() << featureList.at(i) << " = " << regValues.at(i);
+                    for (int i = 0; i < camAttributes.count(); i++) {
+                        if (!camAttributes.at(i).isEmpty()) {
+                            qDebug() << featureList.at(i) << " = " << camAttributes.at(i);
                         }
                     }
                 }
-                regValues.clear();
+                camAttributes.clear();
             }
             else
                 qDebug() << "Fetch xml file from device first";
@@ -122,6 +169,12 @@ int main(int argc, char *argv[])
             break;
 
         case '4':
+            error = cam_api->cameraReadRegisterValue(destAddr, regAddresses, regValues);
+            for (int i = 0; i < regAddresses.count(); i++) {
+                qDebug() << regAddresses.at(i).registerAddress << " = " << regValues.at(i);
+            }
+            regValues.clear();
+
             break;
 
         }

@@ -6,7 +6,6 @@
 #include <QUdpSocket>
 #include <QtNetwork>
 #include "gvcp/gvcpHeaders.h"
-#include "caminterface.h"
 
 unsigned char gvcpHelperReverseBits(unsigned char b);
 void gvcpHelperMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray);

@@ -16,17 +16,36 @@ void cameraApi::slotReadyRead()
     emit signalAckReceived();
 }
 
-quint32 byteArrayToUint32(const QByteArray &bytes)
+bool fetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value) {
+    bool error = true;
+    QDomNodeList nodeList;
+
+    /* Find the value of a child element with specified tag. */
+    nodeList = parent.toElement().elementsByTagName(tagName);
+    if (nodeList.count() == 1) {
+        value = nodeList.at(0).childNodes().at(0).nodeValue();
+        error = false;
+    }
+
+    return error;
+}
+
+quint32 byteArrayToAddr(const QByteArray& bytes)
 {
-    auto count = bytes.size();
-    if (count == 0 || count > 4) {
-        return 0;
+    QByteArray byteArray;
+    quint32 number = 0;
+
+    if (bytes.count() > 4) {
+        byteArray = bytes.mid(bytes.count() - 4);
+    } else {
+        byteArray = bytes;
     }
-    quint32 number = 0U;
-    for (int i = 0; i < count; ++i) {
-        auto b = static_cast<quint8>(bytes[count - 1 - i]);
-        number += static_cast<quint32>(b << (8 * i));
+
+    QDataStream stream(byteArray);
+    for (ulong var = byteArray.size(); var > 0; var--) {
+        stream >> *((quint8 *)&number + (var - 1));
     }
+
     return number;
 }
 
@@ -92,65 +111,92 @@ bool cameraApi::cameraReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAd
 
 /* This function reads an attribute from the device using XML which was previously fetched. */
 bool cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile,
-                                          const QHostAddress destAddr, QList<quint32>& registerValues)
+                                          const QHostAddress destAddr, QList<QByteArray>& registerValues)
 {
     bool error = false;
-    bool featureFound;
     QDomElement root;
+    QDomNodeList tempList;
+    QDomNode tempNode;
+    quint32 address = 0, length = 0;
+    QString tempStr;
+    strGvcpCmdReadRegHdr tempHdr;
+    QList<quint32> tempRegisterVal;
     QList<quint32> featureAddressList;
+    QMap<QString, QDomNodeList> camFeatures;
 
     /* Initialize list. */
     featureAddressList.clear();
 
     /* Check to see if this function is provided with a valid XML file. */
-    if (xmlFile.isDocument()) {
+    if (!xmlFile.isDocument()) {
+
+        error = true;
+    }
+
+    if (!error) {
 
         /* Start with the first child element. */
         root = xmlFile.firstChildElement();
 
-        /* Fetch all elements which have an attribute named address. */
-        QDomNodeList items = root.elementsByTagName("Address");
+        /* Parse the XML and get all the nodes with following tags. */
+        for (int var = 0; var < lookupTags.count(); var++) {
+            tempList = root.elementsByTagName(lookupTags.at(var));
+            camFeatures.insert(lookupTags.at(var), tempList);
+        }
 
-        /* This for loops simply goes through the list of features that need to be fetched. */
-        for (quint16 featureCounter = 0; featureCounter < attributeList.count(); featureCounter++) {
+        /* Traverse through the list and find the address. */
+        for (int var = 0; var < attributeList.count() && !error; var++) {
 
-            /* Change the status to feature not found here. */
-            featureFound = false;
+            /* Fetch the element with specified name. */
+            error = cameraXmlFetchAttrElement(attributeList.at(var), camFeatures, tempNode);
 
-            /* Find the specific feature out of all the features fetched from XML file.  */
-            for (int iterator = 0; iterator < items.count(); iterator++) {
+            if (!error) {
+                /* Fetch the child element of node with the name "Address" */
+                error = fetchChildElementValue(tempNode, "Address", tempStr);
 
-                /* Store the current element in a buffer. */
-                QDomNode itemnode = items.at(iterator);
+                if (!error) {
+                    /* Convert address to uint32. */
+                    address = byteArrayToAddr(QByteArray::fromHex(QByteArray::fromStdString(tempStr.toStdString())));
 
-                /* Check to see if the description of feature is same as provided in the list. */
-                if (!QString::compare(itemnode.parentNode().attributes().namedItem("Name").nodeValue(), attributeList.at(featureCounter))) {
+                    /* Fetch length of the register. */
+                    error = fetchChildElementValue(tempNode, "Length", tempStr);
 
-                    /* Feature has been found. */
-                    featureFound = true;
+                    if (!error) {
+                        /* Convert length to uint. */
+                        length = tempStr.toInt();
+                    }
+                }
 
-                    /* Correct feature has been found, so take its address and store it in a buffer after converting to unsigned integer. */
-                    featureAddressList.append(byteArrayToUint32(QByteArray::fromHex(QByteArray::fromStdString(itemnode.childNodes().item(0).nodeValue().toStdString()))));
+                if (!error) {
+                    QByteArray tempData;
 
-//                    for (int i = 0; i < itemnode.parentNode().childNodes().count(); i++) {
-//                        qDebug() << itemnode.parentNode().childNodes().item(i).nodeName();
-//                    }
+                    if (length > sizeof(quint32)) {
+                        /* If length is greater than 4, then its a memory block and not a register. */
+                        error = cameraReadMemoryBlock(address, length, destAddr, tempData);
+
+                        if (!error) {
+                            registerValues.append(tempData);
+                        }
+                    } else {
+
+                        /* Set the header. */
+                        tempHdr.registerAddress = address;
+                        tempRegisterVal.clear();
+
+                        /* Read register value. */
+                        error = cameraReadRegisterValue(destAddr, QList<strGvcpCmdReadRegHdr>() << tempHdr, tempRegisterVal);
+
+                        if (!error) {
+
+                            /* Store register value. */
+                            tempData.append((char *)&tempRegisterVal.at(0), sizeof(quint32));
+                            registerValues.append(tempData);
+                        }
+                    }
                 }
             }
-
-            if (!featureFound) {
-
-                qDebug() << "Address for " << attributeList.at(featureCounter) << " is not found in the XML file.";
-            }
-        }
-
-        if (!error) {
-
-            /* If error is not found, fetch register values. */
-            error = cameraReadRegisterValue(destAddr, featureAddressList, registerValues);
         }
     }
-
     return error;
 }
 
@@ -160,7 +206,7 @@ bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const QLi
     QByteArray cmdSpecificData;
     strNonStdGvcpAckHdr ackHdr;
     QNetworkDatagram datagram;
-    quint16 reqId = 1;
+    quint16 reqId = (QDateTime::currentMSecsSinceEpoch() % 50) + 1;
 
     /* Initialize memory to 0. */
     memset(&ackHdr, 0x00, sizeof(strNonStdGvcpAckHdr));
@@ -187,7 +233,8 @@ bool cameraApi::cameraWriteRegisterValue(const QHostAddress &destAddr, const QLi
     if (!error) {
 
         /* Receive data in the array. */
-        for (int retryCount = 0, error = true;
+        error = true;
+        for (int retryCount = 0;
             (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
@@ -244,7 +291,7 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
     QByteArray cmdSpecificData;
     strGvcpCmdReadMemHdr readMemHdr;
     strNonStdGvcpAckHdr ackHdr;
-    quint16 reqId = 2;
+    quint16 reqId = (QDateTime::currentMSecsSinceEpoch() % 50) + 1;
     quint16 bytesRead = 0;
     quint32 retry_count = 0;
 
@@ -268,7 +315,8 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
         if (!error) {
 
             /* Receive data in the array. */
-            for (retry_count = 0, error = true;
+            error = true;
+            for (retry_count = 0;
                 (retry_count < MAX_ACK_FETCH_RETRY_COUNT) && error;
                 (retry_count++)) {
 
@@ -279,13 +327,12 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
                     error = cameraFetchAck(ackHdr, reqId);
                 }
             }
+        }
 
-            if (retry_count == MAX_ACK_FETCH_RETRY_COUNT) {
+        if (error) {
 
-                /* Memory block missed from between */
-                error = true;
-                break;
-            }
+            /* Memory block missed from between */
+            break;
         }
 
         if (!error) {
@@ -333,7 +380,7 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
     strNonStdGvcpAckHdr ackHdr;
     strGvcpAckMemReadHdr *readMemAckHdr;
     QNetworkDatagram datagram;
-    quint16 reqId = 1;
+    quint16 reqId = (QDateTime::currentMSecsSinceEpoch() % 50) + 1;
 
     /* Clear buffers for command processing. */
     cmdSpecificData.clear();
@@ -354,7 +401,8 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
     if (!error) {
 
         /* Receive data in the array. */
-        for (int retryCount = 0, error = true;
+        error = true;
+        for (int retryCount = 0;
             (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
@@ -382,15 +430,33 @@ bool cameraApi::cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& by
     return error;
 }
 
-bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QList<quint32> addressList, QList<quint32>& regValues)
+bool cameraApi::cameraXmlFetchAttrElement(const QString& attributeName, const QMap<QString, QDomNodeList>& camFeatures, QDomNode& node)
+{
+    bool error = true;
+
+    /* Traverse through the list and find all the elements with specified tags. */
+    for (int var = 0; var < camFeatures.count(); var++) {
+        QDomNodeList tempList = camFeatures.value(lookupTags.at(var));
+        for (int counter = 0; counter < tempList.count(); counter++) {
+            if(!QString::compare(tempList.at(counter).attributes().namedItem("Name").nodeValue(), attributeName)) {
+                node = tempList.at(counter);
+                error = false;
+                break;
+            }
+        }
+    }
+
+    return error;
+}
+
+bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QList<strGvcpCmdReadRegHdr> addressList, QList<quint32>& regValues)
 {
     bool error = false;
     QByteArray cmdSpecificData;
-    strGvcpCmdReadRegHdr regReadCmdHdr;
     strNonStdGvcpAckHdr ackHdr;
     strGvcpAckRegReadHdr *regReadAckHdr;
     QNetworkDatagram datagram;
-    quint16 reqId = 1;
+    quint16 reqId = (QDateTime::currentMSecsSinceEpoch() % 50) + 1;
 
     /* Initialize memory to 0. */
     memset(&ackHdr, 0x00, sizeof(*(&ackHdr)));
@@ -405,19 +471,10 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
 
     if (!error) {
 
-        /* Set register addresses to read. */
-        regReadCmdHdr.registerAddress = new quint32(addressList.count());
-        for (int counter = 0; counter < addressList.count(); counter++) {
-            regReadCmdHdr.registerAddress[counter] = addressList.at(counter);
+        /* Copy data into the array. */
+        for (int counter = 0; counter < addressList.length(); counter++) {
+            cmdSpecificData.append((char *)&addressList.at(counter), sizeof(strGvcpCmdReadRegHdr));
         }
-
-        /* Append data set for URL header in generic command specidifc data array. */
-        for (int counter = 0; counter < addressList.count(); counter++) {
-            cmdSpecificData.append((char *)&regReadCmdHdr.registerAddress[counter], sizeof(quint32));
-        }
-
-        /* Free up memory space allocated earlier. */
-        delete(regReadCmdHdr.registerAddress);
 
         /* Send command to the specified address. */
         mVectorPendingReq->push_front(reqId);
@@ -427,7 +484,8 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
     if (!error) {
 
         /* Receive data in the array. */
-        for (int retryCount = 0, error = true;
+        error = true;
+        for (int retryCount = 0;
             (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
@@ -458,11 +516,12 @@ bool cameraApi::cameraReadRegisterValue(const QHostAddress &destAddr, const QLis
 }
 
 /* This function discovers the device and populates the ack header. */
-bool cameraApi::cameraDiscoverDevice(const QHostAddress& addr, strNonStdGvcpAckHdr& ackHdr)
+bool cameraApi::cameraDiscoverDevice(const QHostAddress& addr, strGvcpAckDiscoveryHdr& discAckHdr)
 {
     bool error = false;
+    strNonStdGvcpAckHdr ackHdr;
     QByteArray cmdSpecificData;
-    quint16 reqId = 1;
+    quint16 reqId = (QDateTime::currentMSecsSinceEpoch() % 50) + 1;
 
     /* Just a safety check. */
     if (!mUdpSock->isValid()) {
@@ -487,26 +546,29 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress& addr, strNonStdGvcpAckH
     if (!error) {
 
         /* Try to fetch the replies for MAX_ACK_FETCH_RETRY_COUNT times. */
-        for (int retryCount = 0, error = true; retryCount < MAX_ACK_FETCH_RETRY_COUNT; retryCount++) {
+        error = true;
+        for (int retryCount = 0;
+            (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
+            (retryCount++)) {
 
             /* Wait for the signal,. */
             if (mUdpSock->waitForReadyRead(100)) {
 
                 /* Receive the next pending ack. */
                 error = cameraFetchAck(ackHdr, reqId);
-
-                /* Check to see if correct acknowledgement packet has been found. */
-                if (!error) {
-
-                    break;
-                }
             }
         }
     }
 
-    if (error) {
+    if (!error) {
 
-        qDebug() << "Error: Correct acknowledgement packet is not received.";
+        strGvcpAckDiscoveryHdr *ptr = (strGvcpAckDiscoveryHdr *)ackHdr.cmdSpecificAckHdr;
+        memcpy(&discAckHdr, ptr, sizeof(strGvcpAckDiscoveryHdr));
+        gvcpHelperFreeAckMemory(ackHdr);
+
+    } else {
+
+        qDebug() << "Error: Acknowledgement packet is not received.";
     }
 
     return error;
@@ -522,8 +584,8 @@ bool cameraApi::cameraFetchXmlFromDevice(const QByteArray fileName, const QByteA
     QStringList list;
     QFile file(fileName), xmlFile;
     QDataStream stream(&file);
-    const quint32 startAddressReadFromUrl = byteArrayToUint32(QByteArray::fromHex(startAddress));
-    const quint16 sizeReadFromUrl = byteArrayToUint32(QByteArray::fromHex(size));
+    const quint32 startAddressReadFromUrl = byteArrayToAddr(QByteArray::fromHex(startAddress));
+    const quint16 sizeReadFromUrl = byteArrayToAddr(QByteArray::fromHex(size));
 
     /* Retrieve data from the memory blockes where XML file is stored in the device. */
     error = cameraReadMemoryBlock(startAddressReadFromUrl, sizeReadFromUrl, destAddr, retrievedXml);

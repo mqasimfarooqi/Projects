@@ -12,6 +12,21 @@ unix {
     LIBS += -L$$PWD/quazip -lz
 }
 
+system(git):DEFINES += HAS_GIT
+
+#ifdef HAS_GIT
+system(git branch):DEFINES += GIT_TRACKED
+#endif
+
+#ifdef GIT_TRACKED
+GIT_BRANCH=$$system(git branch --show-current)
+GIT_COMMIT_HASH=$$system(git log -n 1 --pretty=format:\"%H\")
+GIT_COMMIT_DATE=$$system(git log -n 1 --pretty=format:\"%aD\")
+DEFINES += "GIT_BRANCH=\"\\\"$${GIT_BRANCH}\\\"\"" \
+           "GIT_COMMIT_HASH=\"\\\"$${GIT_COMMIT_HASH}\\\"\"" \
+           "GIT_COMMIT_DATE=\"\\\"$${GIT_COMMIT_DATE}\\\"\""
+#endif
+
 SOURCES += \
         cameraapi.cpp \
         caminterface.cpp \
