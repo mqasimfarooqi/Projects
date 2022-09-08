@@ -12,16 +12,16 @@ const QString buildTime = __TIME__;
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
-    cameraApi *cam_api;
+    cameraApi *cheetah;
     QUdpSocket m_sock;
-    QHostAddress bindAddr, destAddr;
+    QHostAddress hostAddr, destAddr;
+    quint16 hostPort;
     QList<QString> featureList;
     strGvcpAckDiscoveryHdr discHdr;
     QDomDocument XmlDoc;
     QList<strGvcpCmdWriteRegHdr> writeUnit;
-    bool error = false, xmlRead = false;
+    bool error = false;
     char option;
-    QVector<quint8> pendingReqVec;
     QList<QByteArray> camAttributes;
     QList<quint32> regValues;
     QList<strGvcpCmdReadRegHdr> regAddresses;
@@ -38,8 +38,6 @@ int main(int argc, char *argv[])
 #else
     qDebug() << "This project is not tracked.";
 #endif
-
-    cam_api = new cameraApi(&m_sock, &pendingReqVec);
 
     featureList.append("GevCCPReg"); //gigeCCPReg
     featureList.append("GevHeartbeatTimeoutReg"); //gigeHeartBeatReg
@@ -68,14 +66,6 @@ int main(int argc, char *argv[])
     readReg.registerAddress = 0x934;
     regAddresses.append(readReg);
 
-    /* Bind UDP socket to an address. */
-    bindAddr.setAddress("192.168.10.3");
-    if (!(m_sock.bind(bindAddr, 55455))) {
-
-        qDebug() << "Could not bind socket to an address/port.";
-        error = true;
-    }
-
     writeReg.registerAddress = 0xa00;
     writeReg.registerData = 0x2;
     writeUnit.append(writeReg);
@@ -88,16 +78,30 @@ int main(int argc, char *argv[])
     writeReg.registerData = 0xa9da;
     writeUnit.append(writeReg);
 
-    /* Set address where the packet should be sent. */
-    destAddr.setAddress("192.168.10.18");
+    if (!error) {
 
-    qDebug() << "0 -> Test discover device";
-    qDebug() << "1 -> Test read attribute command";
-    qDebug() << "2 -> Test write register command";
-    qDebug() << "3 -> Test read xml file";
-    qDebug() << "4 -> Test read register command";
-    qDebug() << "-----------------------------";
-    qDebug() << "Watch output on wireshark";
+        qInfo() << "-----------------------------";
+        qInfo() << "0 -> Test discover device";
+        qInfo() << "1 -> Test read attribute command";
+        qInfo() << "2 -> Test write register command";
+        qInfo() << "3 -> Test read reg command";
+        qInfo() << "4 -> Test start stream command";
+        qInfo() << "-----------------------------";
+
+    } else {
+
+        qInfo() << "Unable to initialize camera.";
+    }
+
+    hostAddr.setAddress("192.168.10.17");
+    destAddr.setAddress("192.168.10.2");
+    hostPort = 55965;
+    cheetah = new cameraApi(hostAddr, hostPort, destAddr);
+
+    destAddr.setAddress("255.255.255.255");
+    cheetah->cameraInitializeDevice();
+    cheetah->cameraStartStream(47345);
+    a.exec();
 
     while(!error) {
 
@@ -105,79 +109,72 @@ int main(int argc, char *argv[])
 
         switch (option) {
         case '0':
-            error = cam_api->cameraDiscoverDevice(destAddr, discHdr);
+            error = cheetah->cameraDiscoverDevice(destAddr, discHdr);
             if (error) {
-                qDebug() << "Command failed";
+                qInfo() << "Command failed";
             } else {
-                qDebug() << "currentIp = "  << discHdr.currentIp;
-                qDebug() << "defaultGateway = "  << discHdr.defaultGateway;
-                qDebug() << "deviceMacAddrHigh = "  << discHdr.deviceMacAddrHigh;
-                qDebug() << "deviceMacAddrLow = "  << discHdr.deviceMacAddrLow;
-                qDebug() << "deviceMode = "  << discHdr.deviceMode;
-                qDebug() << "specVersionMajor = "  << discHdr.specVersionMajor;
-                qDebug() << "specVersionMinor = "  << discHdr.specVersionMinor;
-                qDebug() << "ipConfigCurrent = "  << discHdr.ipConfigCurrent;
-                qDebug() << "ipConfigOptions = "  << discHdr.ipConfigOptions;
-                qDebug() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
-                qDebug() << "serialNumber = "  << QByteArray::fromRawData((char *)&discHdr.serialNumber, 16);
-                qDebug() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
-                qDebug() << "deviceVersion = "  << QByteArray::fromRawData((char *)&discHdr.deviceVersion, 32);
-                qDebug() << "manufacturerName = "  << QByteArray::fromRawData((char *)&discHdr.manufacturerName, 32);
-                qDebug() << "modelName = "  << QByteArray::fromRawData((char *)&discHdr.modelName, 32);
-                qDebug() << "manufacturerSpecificInfo" << QByteArray::fromRawData((char *)&discHdr.manufacturerSpecificInfo, 48);
+                qInfo() << "currentIp = "  << discHdr.currentIp;
+                qInfo() << "defaultGateway = "  << discHdr.defaultGateway;
+                qInfo() << "deviceMacAddrHigh = "  << discHdr.deviceMacAddrHigh;
+                qInfo() << "deviceMacAddrLow = "  << discHdr.deviceMacAddrLow;
+                qInfo() << "deviceMode = "  << discHdr.deviceMode;
+                qInfo() << "specVersionMajor = "  << discHdr.specVersionMajor;
+                qInfo() << "specVersionMinor = "  << discHdr.specVersionMinor;
+                qInfo() << "ipConfigCurrent = "  << discHdr.ipConfigCurrent;
+                qInfo() << "ipConfigOptions = "  << discHdr.ipConfigOptions;
+                qInfo() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
+                qInfo() << "serialNumber = "  << QByteArray::fromRawData((char *)&discHdr.serialNumber, 16);
+                qInfo() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
+                qInfo() << "deviceVersion = "  << QByteArray::fromRawData((char *)&discHdr.deviceVersion, 32);
+                qInfo() << "manufacturerName = "  << QByteArray::fromRawData((char *)&discHdr.manufacturerName, 32);
+                qInfo() << "modelName = "  << QByteArray::fromRawData((char *)&discHdr.modelName, 32);
+                qInfo() << "manufacturerSpecificInfo" << QByteArray::fromRawData((char *)&discHdr.manufacturerSpecificInfo, 48);
             }
             break;
 
         case '1':
-            if (xmlRead) {
-                error = cam_api->cameraReadCameraAttribute(featureList, XmlDoc, destAddr, camAttributes);
-                if (error) {
-                    qDebug() << "Command failed";
-                } else {
-                    for (int i = 0; i < camAttributes.count(); i++) {
-                        if (!camAttributes.at(i).isEmpty()) {
-                            //qDebug() << featureList.at(i) << " = " << camAttributes.at(i);
-                        }
+            error = cheetah->cameraReadCameraAttribute(featureList, camAttributes);
+            if (error) {
+                qInfo() << "Command failed";
+            } else {
+                for (int i = 0; i < camAttributes.count(); i++) {
+                    if (!camAttributes.at(i).isEmpty()) {
+                        qInfo() << featureList.at(i) << " = " << camAttributes.at(i);
                     }
                 }
-                camAttributes.clear();
             }
-            else
-                qDebug() << "Fetch xml file from device first";
+            camAttributes.clear();
             break;
 
         case '2':
-            error = cam_api->cameraWriteRegisterValue(destAddr, writeUnit);
+            error = cheetah->cameraWriteRegisterValue(writeUnit);
             if (error) {
-                qDebug() << "Command failed";
+                qInfo() << "Command failed";
             } else {
-                qDebug() << "Registers written successfully.";
+                qInfo() << "Registers written successfully.";
             }
             break;
 
         case '3':
-            error = cam_api->cameraReadXmlFileFromDevice(XmlDoc, destAddr);
-            if (error) {
-                qDebug() << "Command failed";
-            } else {
-                xmlRead = true;
-                qDebug() << "XML file read successfully.";
+            error = cheetah->cameraReadRegisterValue(regAddresses, regValues);
+            for (int i = 0; i < regAddresses.count(); i++) {
+                qInfo() << regAddresses.at(i).registerAddress << " = " << regValues.at(i);
             }
+            regValues.clear();
+
             break;
 
         case '4':
-            error = cam_api->cameraReadRegisterValue(destAddr, regAddresses, regValues);
-            for (int i = 0; i < regAddresses.count(); i++) {
-                qDebug() << regAddresses.at(i).registerAddress << " = " << regValues.at(i);
-            }
-            regValues.clear();
+            error = cheetah->cameraStartStream(59965);
+            a.exec();
 
             break;
 
         }
     }
 
-    qDebug() << "Error occured. Exiting program.";
-    delete(cam_api);
+    qInfo() << "Error occured. Exiting program.";
+    delete(cheetah);
+
     return a.exec();
 }

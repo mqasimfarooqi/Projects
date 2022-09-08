@@ -42,7 +42,6 @@
 
 /* General program defines. */
 #define BIT(x) (1 << x)
-#define MAX_ACK_FETCH_RETRY_COUNT (3)
 #define GVCP_MAX_PAYLOAD_LENGTH (0x218)
 
 /* Command header flag bit fields. */

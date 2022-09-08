@@ -31,6 +31,7 @@ SOURCES += \
         cameraapi.cpp \
         caminterface.cpp \
         gvcp/gvcp.cpp \
+        gvsp/gvsp.cpp \
         main.cpp \
         quazip/JlCompress.cpp \
         quazip/qioapi.cpp \
@@ -59,6 +60,8 @@ HEADERS += \
     gvcp/gvcpAckHeaders.h \
     gvcp/gvcpCmdHeaders.h \
     gvcp/gvcpHeaders.h \
+    gvsp/gvsp.h \
+    gvsp/gvspHeaders.h \
     quazip/JlCompress.h \
     quazip/ioapi.h \
     quazip/minizip_crypt.h \

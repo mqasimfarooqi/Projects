@@ -200,7 +200,8 @@ void gvcpHelperMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray
     dataArray.append((char *)&genericHdr, sizeof(genericHdr));
 }
 
-bool gvcpReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ackHeader) {
+bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
+
     bool error = false;
     QByteArray tempArray;
     QNetworkDatagram datagram = { 0 };
@@ -244,7 +245,7 @@ bool gvcpReceiveAck(QUdpSocket *udpSock, strNonStdGvcpAckHdr& ackHeader) {
     return (error);
 }
 
-bool gvcpSendCmd(QUdpSocket *udpSock, const quint16 cmdType, const QByteArray &cmdSpecificData,
+bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray &cmdSpecificData,
                  const QHostAddress &destAddr, const quint16 port, const quint16 reqId)
 {
     bool error = false;
@@ -252,7 +253,7 @@ bool gvcpSendCmd(QUdpSocket *udpSock, const quint16 cmdType, const QByteArray &c
     QByteArray dataArray;
 
     /* Check to see if the pointer is not null. */
-    if (!udpSock->isValid()) {
+    if (!udpSock.isValid()) {
         error = true;
         qDebug() << "Error: Udp socket pointer is invalid.";
     }

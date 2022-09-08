@@ -5,9 +5,12 @@
 #include <QUdpSocket>
 #include <QtXml>
 #include <QDateTime>
+#include <QTimer>
 #include "gvcp/gvcpHeaders.h"
 
-#define CAMERA_API_COMMAND_READXML (1)
+#define BIT(x) (1 << x)
+#define MAX_ACK_FETCH_RETRY_COUNT (3)
+#define CAM_STATUS_FLAGS_INITIALIZED BIT(0)
 
 const QList<QString> lookupTags = {
     "IntReg",
@@ -20,34 +23,51 @@ class cameraApi : public QObject
 {
     Q_OBJECT
 public:
-    explicit cameraApi(QObject *parent = nullptr);
-    cameraApi(QUdpSocket *udp_socket, QVector<quint8> *pendingReqVector);
+    explicit cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QHostAddress camIP, QObject *parent = nullptr);
 
 signals:
-    void signalAckReceived();
+    void signalGvcpPacketReceived();
+    void signalGvspPacketReceived();
 
 public slots:
-    void slotReadyRead();
+    void slotGvcpReadyRead();
+    void slotGvspReadyRead();
+    void slotCameraHeartBeat();
 
 public:
     /* Public functions that need to be exposed for applications. */
-    bool cameraReadXmlFileFromDevice(QDomDocument& xmlFile, const QHostAddress& destAddr);
-    bool cameraReadCameraAttribute(const QList<QString>& attributeList, const QDomDocument& xmlFile, const QHostAddress destAddr, QList<QByteArray>& regValues);
-    bool cameraWriteRegisterValue(const QHostAddress &destAddr, const QList<strGvcpCmdWriteRegHdr>& writeUnits);
-    bool cameraReadRegisterValue(const QHostAddress& destAddr, const QList<strGvcpCmdReadRegHdr> addressList, QList<quint32>& regValues);
-    bool cameraDiscoverDevice(const QHostAddress& destAddr, strGvcpAckDiscoveryHdr& discHdr);
+    bool cameraReadCameraAttribute(const QList<QString>& attributeList, QList<QByteArray>& regValues);
+    bool cameraWriteCameraAttribute(const QList<QString>& attributeList, const QList<QByteArray>& regValues);
+    bool cameraWriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& writeUnits);
+    bool cameraReadRegisterValue(const QList<strGvcpCmdReadRegHdr> addressList, QList<quint32>& regValues);
+    bool cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDiscoveryHdr& discAckHdr);
+    bool cameraStartStream(const quint16 streamHostPort);
+    bool cameraInitializeDevice();
+
+    /* Getters and setters */
+    quint8 camStatusFlags() const;
 
 private:
     /* Private camera functionalities for this API. */
+    bool cameraReadXmlFileFromDevice();
     bool cameraFetchAck(strNonStdGvcpAckHdr& ack_hdr, const quint16 reqId);
-    bool cameraReadMemoryBlock(const quint32 address, const quint16 size, const QHostAddress destAddr, QByteArray& returnedData);
-    bool cameraFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, const QHostAddress destAddr, QByteArray& xmlData);
-    bool cameraFetchFirstUrl(const QHostAddress& destAddr, QByteArray& byteArray);
-    bool cameraXmlFetchAttrElement(const QString& attributeName, const QMap<QString, QDomNodeList>& camFeatures, QDomNode& node);
+    bool cameraReadMemoryBlock(const quint32 address, const quint16 size, QByteArray& returnedData);
+    bool cameraFetchFirstUrl(QByteArray& byteArray);
+    bool cameraXmlFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, QByteArray& xmlData);
+    bool cameraXmlFetchAttrElement(const QString& attributeName, QDomNode& node);
+    bool cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value);
 
     /* Private variables. */
-    QUdpSocket *mUdpSock;
-    QVector<quint8> *mVectorPendingReq;
+    const QHostAddress mHostIPAddr;
+    const quint16 mGvcpHostPort;
+    const QHostAddress mCamIPAddr;
+    QUdpSocket mGvcpSock;
+    QUdpSocket mGvspSock;
+    QThread streamingThread;
+    QDomDocument mCamXmlFile;
+    QTimer mHeartBeatTimer;
+    QVector<quint8> mVectorPendingReq;
+    quint8 mCamStatusFlags;
 };
 
 #endif // CAMERAAPI_H

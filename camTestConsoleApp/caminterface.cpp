@@ -1,12 +1,12 @@
 #include "caminterface.h"
 
 /* This function populates the relevant headers sends the packet. */
-bool caminterface::camGigeVSendCmd(QUdpSocket *udpSock, QNetworkDatagram& datagram) {
+bool caminterface::camGigeVSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram) {
 
     bool error = false;
 
     /* Check to see if the pointer is not null. */
-    if (!udpSock->isValid()) {
+    if (!udpSock.isValid()) {
         error = true;
         qDebug() << "Error: Udp socket pointer is invalid.";
 
@@ -26,7 +26,7 @@ bool caminterface::camGigeVSendCmd(QUdpSocket *udpSock, QNetworkDatagram& datagr
     if (!error) {
 
         /* Write datagram to the udp socket. */
-        if(!(udpSock->writeDatagram(datagram) > 0)) {
+        if(!(udpSock.writeDatagram(datagram) > 0)) {
 
             qDebug() << "Error: Error sending datagram.";
             error = true;
@@ -36,12 +36,12 @@ bool caminterface::camGigeVSendCmd(QUdpSocket *udpSock, QNetworkDatagram& datagr
     return error;
 }
 
-bool caminterface::camGigeVReceiveAck(QUdpSocket *udpSock, QNetworkDatagram& datagram)
+bool caminterface::camGigeVReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& datagram)
 {
     bool error = false;
 
     /* Check to see if the pointer is not null. */
-    if (!udpSock->isValid() || !(udpSock->hasPendingDatagrams())) {
+    if (!udpSock.isValid() || !(udpSock.hasPendingDatagrams())) {
 
         error = true;
         qDebug() << "Error: Cannot receive UDP packet either due to "
@@ -50,7 +50,7 @@ bool caminterface::camGigeVReceiveAck(QUdpSocket *udpSock, QNetworkDatagram& dat
     } else {
 
         /* Valid datagrams are waiting to be read. */
-        datagram = udpSock->receiveDatagram();
+        datagram = udpSock.receiveDatagram();
     }
 
     return error;
