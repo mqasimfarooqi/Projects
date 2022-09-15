@@ -1,7 +1,7 @@
 #include "caminterface.h"
 
 /* This function populates the relevant headers sends the packet. */
-bool caminterface::camGigeVSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram) {
+bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram) {
 
     bool error = false;
 
@@ -36,7 +36,7 @@ bool caminterface::camGigeVSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagr
     return error;
 }
 
-bool caminterface::camGigeVReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& datagram)
+bool caminterface::camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& datagram)
 {
     bool error = false;
 

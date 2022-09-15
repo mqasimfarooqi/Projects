@@ -4,12 +4,10 @@
 #include <QObject>
 
 enum {
-
     strGvcpAckHdrSTATUS = 0,
     strGvcpAckHdrACKNOWLEDGE = 2,
     strGvcpAckHdrLENGTH = 4,
     strGvcpAckHdrACKID = 6
-
 };
 
 enum {
@@ -50,10 +48,9 @@ enum {
 };
 
 /* Generic acknowledgement header. */
-; //Just to remove the warning (Bug with clang)
+; // To remove compiler warning (Bug with clang)
 #pragma pack(push, 1)
 typedef struct {
-
     quint16 status;
     quint16 acknowledge;
     quint16 length;
@@ -65,7 +62,6 @@ typedef struct {
 /* Discovery acknowledgement header. */
 #pragma pack(push, 1)
 typedef struct {
-
     quint16 specVersionMajor;
     quint16 specVersionMinor;
     quint32 deviceMode;
@@ -92,7 +88,6 @@ typedef struct {
 
 #pragma pack(push, 1)
 typedef struct {
-
     quint32 address;
     QByteArray data;
 
@@ -102,7 +97,6 @@ typedef struct {
 /* Read register acknowledgement header. */
 #pragma pack(push, 1)
 typedef struct {
-
     quint32 *registerData;
 
 } strGvcpAckRegReadHdr;

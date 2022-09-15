@@ -207,7 +207,7 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
     QNetworkDatagram datagram = { 0 };
 
     /* Receive datagram. */
-    error = caminterface::camGigeVReceiveAck(udpSock, datagram);
+    error = caminterface::camGigeVEthReceiveAck(udpSock, datagram);
 
     if (!error && datagram.data().length()) {
 
@@ -272,7 +272,7 @@ bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray &c
 
         datagram.setDestination(destAddr, port);
         datagram.setData(dataArray);
-        error = caminterface::camGigeVSendCmd(udpSock, datagram);
+        error = caminterface::camGigeVEthSendCmd(udpSock, datagram);
     }
 
     return error;

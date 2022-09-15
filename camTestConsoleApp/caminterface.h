@@ -12,10 +12,10 @@ class caminterface
 
 public:
     /* Send a command to specified address and port. */
-    static bool camGigeVSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram);
+    static bool camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram);
 
     /* Receive a packet from UDP socket overloaded. */
-    static bool camGigeVReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& rawSocketData);
+    static bool camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& rawSocketData);
 };
 
 #endif // CAMINTERFACE_H

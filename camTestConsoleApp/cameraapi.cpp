@@ -1,5 +1,6 @@
 #include "cameraapi.h"
 #include "gvcp/gvcp.h"
+#include "gvsp/gvsp.h"
 #include "quazip/JlCompress.h"
 
 cameraApi::cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QHostAddress camIP, QObject *parent)
@@ -7,22 +8,16 @@ cameraApi::cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QH
 
     mVectorPendingReq.clear();
     mCamStatusFlags = 0;
+    mStreamingThread.setObjectName("Streaming Thread");
 }
 
 static quint32 testCounter = 0;
-
-void cameraApi::slotGvcpReadyRead() {
-
-    /* Emit the signal taht the ack has been received for a pending req_id. */
-    emit signalGvcpPacketReceived();
-}
+static quint16 streamPktSize;
 
 void cameraApi::slotGvspReadyRead() {
 
-    /* Emit the signal that streaming packet is received. */
-    emit signalGvspPacketReceived();
-    mGvspSock.receiveDatagram();
-    qDebug() << QThread::currentThread();
+    gvspFetchPacket(mGvspSock);
+
     testCounter++;
 }
 
@@ -34,7 +29,7 @@ void cameraApi::slotCameraHeartBeat() {
     hdr.registerAddress = 0xA00;
     error = cameraReadRegisterValue(QList<strGvcpCmdReadRegHdr>() << hdr, value);
     if(!error) {
-        qDebug() << "Testing camera heartbeat.";
+        //qDebug() << "Testing camera heartbeat.";
     }
 
     qDebug() << testCounter;
@@ -85,9 +80,6 @@ bool cameraApi::cameraReadXmlFileFromDevice() {
     QNetworkDatagram datagram;
     QByteArray first_url;
     QByteArray xml_data;
-
-    /* Make relevant connections. */
-    connect(&mGvcpSock, &QUdpSocket::readyRead, this, &cameraApi::slotGvcpReadyRead, Qt::DirectConnection);
 
     /* Fetch first URL. */
     error = cameraFetchFirstUrl(first_url);
@@ -665,6 +657,7 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDisc
 bool cameraApi::cameraStartStream(const quint16 streamHostPort)
 {
     bool error = false;
+    QList<QByteArray> values;
     quint32 val;
 
     if (!error) {
@@ -693,14 +686,19 @@ bool cameraApi::cameraStartStream(const quint16 streamHostPort)
             } else {
 
                 /* Make relevant connections. */
-                connect(&mGvspSock, &QUdpSocket::readyRead, this, &cameraApi::slotGvspReadyRead, Qt::QueuedConnection);
+                connect(&mGvspSock, &QUdpSocket::readyRead, this, &cameraApi::slotGvspReadyRead, Qt::DirectConnection);
+
+                /* Move the socket to another thread and start. */
+                mGvspSock.moveToThread(&mStreamingThread);
+                mStreamingThread.start();
             }
         }
     }
 
-    qDebug() << QThread::currentThread();
-    mGvspSock.moveToThread(&streamingThread);
-    streamingThread.start();
+    if (!error) {
+        error = cameraReadCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg", values);
+        streamPktSize = qFromBigEndian((quint16)byteArrayToUint32(values.first().left(2)));
+    }
 
     if (!error) {
 
@@ -776,7 +774,7 @@ bool cameraApi::cameraXmlFetchXmlFromDevice(const QByteArray fileName, const QBy
     QFile file(fileName), xmlFile;
     QDataStream stream(&file);
     const quint32 startAddressReadFromUrl = byteArrayToUint32(QByteArray::fromHex(startAddress));
-    const quint16 sizeReadFromUrl = byteArrayToUint32(QByteArray::fromHex(size));
+    const quint16 sizeReadFromUrl = (quint16)byteArrayToUint32(QByteArray::fromHex(size));
 
     /* Retrieve data from the memory blockes where XML file is stored in the device. */
     error = cameraReadMemoryBlock(startAddressReadFromUrl, sizeReadFromUrl, retrievedXml);

@@ -93,8 +93,8 @@ int main(int argc, char *argv[])
         qInfo() << "Unable to initialize camera.";
     }
 
-    hostAddr.setAddress("192.168.10.17");
-    destAddr.setAddress("192.168.10.2");
+    hostAddr.setAddress("192.168.10.3");
+    destAddr.setAddress("192.168.10.14");
     hostPort = 55965;
     cheetah = new cameraApi(hostAddr, hostPort, destAddr);
 

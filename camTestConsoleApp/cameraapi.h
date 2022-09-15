@@ -25,12 +25,7 @@ class cameraApi : public QObject
 public:
     explicit cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QHostAddress camIP, QObject *parent = nullptr);
 
-signals:
-    void signalGvcpPacketReceived();
-    void signalGvspPacketReceived();
-
 public slots:
-    void slotGvcpReadyRead();
     void slotGvspReadyRead();
     void slotCameraHeartBeat();
 
@@ -61,11 +56,11 @@ private:
     const QHostAddress mHostIPAddr;
     const quint16 mGvcpHostPort;
     const QHostAddress mCamIPAddr;
+    QThread mStreamingThread;
+    QTimer mHeartBeatTimer;
     QUdpSocket mGvcpSock;
     QUdpSocket mGvspSock;
-    QThread streamingThread;
     QDomDocument mCamXmlFile;
-    QTimer mHeartBeatTimer;
     QVector<quint8> mVectorPendingReq;
     quint8 mCamStatusFlags;
 };
