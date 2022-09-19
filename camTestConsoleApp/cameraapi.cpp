@@ -746,7 +746,7 @@ bool cameraApi::cameraInitializeDevice() {
         val = qFromBigEndian(byteArrayToUint32(value.first()));
 
         /* Set interval to the value fetched from camera. */
-        mHeartBeatTimer.setInterval(val/4);
+        mHeartBeatTimer.setInterval(val/8);
 
         /* Make relevant connections. */
         connect(&mHeartBeatTimer, &QTimer::timeout, this, &cameraApi::slotCameraHeartBeat, Qt::ConnectionType::DirectConnection);
