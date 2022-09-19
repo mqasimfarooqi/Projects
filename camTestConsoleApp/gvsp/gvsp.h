@@ -38,17 +38,4 @@ bool gvspFetchPacket(QUdpSocket& gvspSocket);
 /* Helper functions. */
 strGvspDataBlockHdr gvspPopulateGenericDataHdr(const quint8 *dataPointer);
 
-typedef struct {
-    quint32 packetId;
-    QByteArray packetData;
-
-} strFrameDataUnit;
-
-typedef struct {
-    quint16 blockId;
-    bool packetsMissing;
-    QVector<strFrameDataUnit> frameData;
-
-} strFrame;
-
 #endif // GVSP_H

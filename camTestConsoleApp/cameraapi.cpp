@@ -32,7 +32,7 @@ void cameraApi::slotCameraHeartBeat() {
         //qDebug() << "Testing camera heartbeat.";
     }
 
-    qDebug() << testCounter;
+    //qDebug() << testCounter;
 }
 
 bool cameraApi::cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value) {

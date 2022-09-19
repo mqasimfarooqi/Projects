@@ -62,7 +62,9 @@ bool gvspFetchPacket(QUdpSocket& gvspSocket) {
     strGvspImageDataTrailerHdr imgTrailerHdr;
     QByteArray dataArr;
     quint8 *dataPtr;
-    static QByteArray imageData = 0;
+    QHash<quint32, QByteArray> frameHT;
+    QHash<quint32, QByteArray> *frameHTPtr;
+    static QHash<quint16, QHash<quint32, QByteArray>> streamHT;
 
     /* Receive the datagram. */
     gvspPkt = gvspSocket.receiveDatagram();
@@ -89,9 +91,11 @@ bool gvspFetchPacket(QUdpSocket& gvspSocket) {
 
         switch (leader.payloadType) {
         case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
-
             imgLeaderHdr = gvspPopulateImageLeaderHdr(dataPtr);
             dataPtr += sizeof(strGvspImageDataLeaderHdr);
+
+            frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, QByteArray());
+            streamHT.insert(streamHdr.blockId$flag, frameHT);
 
             break;
         }
@@ -106,14 +110,28 @@ bool gvspFetchPacket(QUdpSocket& gvspSocket) {
             imgTrailerHdr = gvspPopulateImageTrailerHdr(dataPtr);
             dataPtr += sizeof(strGvspImageDataTrailerHdr);
 
-            qDebug() << "Sizeof image = " << imageData.size();
-            imageData.clear();
+            if (streamHT.contains(streamHdr.blockId$flag)) {
+                frameHT = streamHT[streamHdr.blockId$flag];
+                if (!(frameHT.count() == 3520)) {
+                    qDebug() << "Enteries in block " << streamHdr.blockId$flag << " are " << frameHT.count();
+                    qDebug() << "Enteries in streamHT are " << streamHT.count();
+                } else {
+                    streamHT.remove(streamHdr.blockId$flag);
+                }
+            }
+
             break;
         }
         break;
 
     case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
-        imageData.append((char *)dataPtr + sizeof(strGvspDataBlockHdr), dataArr.count() - sizeof(strGvspDataBlockHdr));
+
+        if (streamHT.contains(streamHdr.blockId$flag)) {
+            frameHTPtr = &streamHT[streamHdr.blockId$flag];
+            frameHTPtr->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
+                               QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr), dataArr.count() - sizeof(strGvspDataBlockHdr)));
+        }
+
         break;
     }
 
