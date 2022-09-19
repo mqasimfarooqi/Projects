@@ -7,11 +7,13 @@
 #include <QDateTime>
 #include <QTimer>
 #include "gvcp/gvcpHeaders.h"
+#include "gvsp/gvsp.h"
 
 #define BIT(x) (1 << x)
 #define MAX_ACK_FETCH_RETRY_COUNT (3)
 #define CAM_STATUS_FLAGS_INITIALIZED BIT(0)
 
+/* SwissKnife is not supported. */
 const QList<QString> lookupTags = {
     "IntReg",
     "Integer",
@@ -22,12 +24,17 @@ const QList<QString> lookupTags = {
 class cameraApi : public QObject
 {
     Q_OBJECT
+
 public:
     explicit cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QHostAddress camIP, QObject *parent = nullptr);
+
+signals:
+    void signalResendRequested();
 
 public slots:
     void slotGvspReadyRead();
     void slotCameraHeartBeat();
+    void slotRequestResendRoutine();
 
 public:
     /* Public functions that need to be exposed for applications. */
@@ -45,6 +52,8 @@ public:
 private:
     /* Private camera functionalities for this API. */
     bool cameraReadXmlFileFromDevice();
+    bool cameraRequestResend(const strGvcpCmdPktResendHdr& cmdHdr);
+    bool cameraAppendResendQueue(const strGvcpCmdPktResendHdr& cmdHdr);
     bool cameraFetchAck(strNonStdGvcpAckHdr& ack_hdr, const quint16 reqId);
     bool cameraReadMemoryBlock(const quint32 address, const quint16 size, QByteArray& returnedData);
     bool cameraFetchFirstUrl(QByteArray& byteArray);
@@ -62,6 +71,7 @@ private:
     QUdpSocket mGvspSock;
     QDomDocument mCamXmlFile;
     QVector<quint8> mVectorPendingReq;
+    QQueue<strGvcpCmdPktResendHdr> mQueuePktResendQueue;
     quint8 mCamStatusFlags;
 };
 

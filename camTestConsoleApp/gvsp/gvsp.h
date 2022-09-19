@@ -37,5 +37,8 @@ bool gvspFetchPacket(QUdpSocket& gvspSocket);
 
 /* Helper functions. */
 strGvspDataBlockHdr gvspPopulateGenericDataHdr(const quint8 *dataPointer);
+strGvspDataBlockExtensionHdr gvspPopulateGenericDataExtensionHdr(const quint8 *dataPtr);
+strGvspImageDataLeaderHdr gvspPopulateImageLeaderHdr(const quint8 *dataPtr);
+strGvspImageDataTrailerHdr gvspPopulateImageTrailerHdr(const quint8 *dataPtr);
 
 #endif // GVSP_H

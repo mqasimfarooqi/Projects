@@ -11,28 +11,105 @@ cameraApi::cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QH
     mStreamingThread.setObjectName("Streaming Thread");
 }
 
-static quint32 testCounter = 0;
 static quint16 streamPktSize;
 
 void cameraApi::slotGvspReadyRead() {
+    QNetworkDatagram gvspPkt;
+    strGvspDataBlockHdr streamHdr;
+    strGvspGenericDataLeaderHdr leader;
+    strGvspGenericDataTrailerHdr trailer;
+    strGvspDataBlockExtensionHdr extHdr;
+    strGvspImageDataLeaderHdr imgLeaderHdr;
+    strGvspImageDataTrailerHdr imgTrailerHdr;
+    QByteArray dataArr;
+    quint8 *dataPtr;
+    QHash<quint32, QByteArray> frameHT;
+    QHash<quint32, QByteArray> *frameHTPtr;
+    static QHash<quint16, QHash<quint32, QByteArray>> streamHT;
 
-    gvspFetchPacket(mGvspSock);
+    /* Receive the datagram. */
+    gvspPkt = mGvspSock.receiveDatagram();
+    dataArr = gvspPkt.data();
+    dataPtr = (quint8 *)dataArr.data();
 
-    testCounter++;
+    /* Populate generic stream header. */
+    streamHdr = gvspPopulateGenericDataHdr(dataPtr);
+    dataPtr += sizeof(strGvspDataBlockHdr);
+
+    /* Parse extended generic header if it is preasent. */
+    if (streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_EI) {
+
+        extHdr = gvspPopulateGenericDataExtensionHdr(dataPtr);
+        dataPtr += sizeof(strGvspDataBlockExtensionHdr);
+    }
+
+    /* Switch on the bases of packet format. */
+    switch ((streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT)
+             >> GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT_SHIFT) {
+    case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_LEADER_FORMAT:
+        leader.payloadTypeSpecific = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPESPECIFIC));
+        leader.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPE));
+
+        switch (leader.payloadType) {
+        case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
+            imgLeaderHdr = gvspPopulateImageLeaderHdr(dataPtr);
+            dataPtr += sizeof(strGvspImageDataLeaderHdr);
+
+            frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, QByteArray());
+            streamHT.insert(streamHdr.blockId$flag, frameHT);
+
+            break;
+        }
+        break;
+
+    case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_TRAILER_FORMAT:
+        trailer.reserved = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrRESERVED));
+        trailer.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrPAYLOADTYPE));
+
+        switch (trailer.payloadType) {
+        case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
+            imgTrailerHdr = gvspPopulateImageTrailerHdr(dataPtr);
+            dataPtr += sizeof(strGvspImageDataTrailerHdr);
+
+            if (streamHT.contains(streamHdr.blockId$flag)) {
+                frameHT = streamHT[streamHdr.blockId$flag];
+                if (frameHT.count() < 3520) {
+
+                    qDebug() << "Enteries in block " << streamHdr.blockId$flag << " are " << frameHT.count();
+                    qDebug() << "Enteries in streamHT are " << streamHT.count();
+                } else {
+                    streamHT.remove(streamHdr.blockId$flag);
+                }
+            }
+
+            break;
+        }
+        break;
+
+    case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
+
+        if (streamHT.contains(streamHdr.blockId$flag)) {
+            frameHTPtr = &streamHT[streamHdr.blockId$flag];
+            frameHTPtr->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
+                               QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr), dataArr.count() - sizeof(strGvspDataBlockHdr)));
+        }
+
+        break;
+    }
 }
 
 void cameraApi::slotCameraHeartBeat() {
     strGvcpCmdReadRegHdr hdr;
     QList<quint32> value;
-    bool error = false;
 
     hdr.registerAddress = 0xA00;
-    error = cameraReadRegisterValue(QList<strGvcpCmdReadRegHdr>() << hdr, value);
-    if(!error) {
-        //qDebug() << "Testing camera heartbeat.";
-    }
+    cameraReadRegisterValue(QList<strGvcpCmdReadRegHdr>() << hdr, value);
+}
 
-    //qDebug() << testCounter;
+void cameraApi::slotRequestResendRoutine() {
+
+    /* Transmit a request to resubmit. */
+    cameraRequestResend(mQueuePktResendQueue.dequeue());
 }
 
 bool cameraApi::cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value) {
@@ -654,6 +731,38 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDisc
     return error;
 }
 
+bool cameraApi::cameraRequestResend(const strGvcpCmdPktResendHdr &cmdHdr) {
+    Q_ASSERT_X(mGvcpSock.isValid(), __FUNCTION__, "GVSP socket for UDP is invalid.");
+    Q_ASSERT_X(!mCamIPAddr.isNull(), __FUNCTION__, "Camera IP address is not set.");
+
+    bool error = false;
+    QByteArray cmdSpecificData;
+    quint16 reqId = (QDateTime::currentMSecsSinceEpoch() % 50) + 1;
+
+    /* Initialize memory to 0. */
+    cmdSpecificData.clear();
+
+    /* Append command specific header. */
+    cmdSpecificData.append((char *)&cmdHdr, sizeof(strGvcpCmdPktResendHdr));
+
+    /* Send command to the specified address. */
+    mVectorPendingReq.push_front(reqId);
+    error = gvcpSendCmd(mGvcpSock, GVCP_PACKETRESEND_CMD, cmdSpecificData, mCamIPAddr, GVCP_DEFAULT_UDP_PORT, reqId);
+
+    return error;
+}
+
+bool cameraApi::cameraAppendResendQueue(const strGvcpCmdPktResendHdr& cmdHdr) {
+
+    /* Enqueue the resend queue. */
+    mQueuePktResendQueue.enqueue(cmdHdr);
+
+    /* Emit the signal that a new request has been received. */
+    emit signalResendRequested();
+
+    return true;
+}
+
 bool cameraApi::cameraStartStream(const quint16 streamHostPort)
 {
     bool error = false;
@@ -753,6 +862,9 @@ bool cameraApi::cameraInitializeDevice() {
 
         /* Fire off the timer. */
         mHeartBeatTimer.start();
+
+        /* Make connection to receive packet resend requests. */
+        connect(this, &cameraApi::signalResendRequested, this, &cameraApi::slotRequestResendRoutine, Qt::ConnectionType::QueuedConnection);
     }
 
     if (!error) {

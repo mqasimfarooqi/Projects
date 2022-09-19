@@ -155,6 +155,17 @@ void gvcpHelperMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmd
         for (quint32 counter = 0; counter < cmdSpecificData.length()/sizeof(strGvcpCmdWriteRegHdr); counter++) {
             dataArray.append((char *)&writeRegHdr[counter], sizeof(strGvcpCmdReadMemHdr));
         }
+    } else if (cmdType == GVCP_PACKETRESEND_CMD) {
+        strGvcpCmdPktResendHdr pktResendCmdHdr;
+
+        /* Store data in the packet resend command header buffer. */
+        pktResendCmdHdr.streamChannelIdx = qToBigEndian(*(quint16 *)(dataPtr + strGvcpCmdPktResendHdrSTREAMCHANNELIDX));
+        pktResendCmdHdr.blockIdRes = qToBigEndian(*(quint16 *)(dataPtr + strGvcpCmdPktResendHdrBLOCKIDRES));
+        pktResendCmdHdr.firstPktId = qToBigEndian(*(quint32 *)(dataPtr + strGvcpCmdPktResendHdrFIRSTPKTID));
+        pktResendCmdHdr.lastPktId = qToBigEndian(*(quint32 *)(dataPtr + strGvcpCmdPktResendHdrLASTPKTID));
+
+        /* Append data to the datagram. */
+        dataArray.append((char *)&pktResendCmdHdr, sizeof(strGvcpCmdPktResendHdr));
     }
 }
 

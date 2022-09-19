@@ -9,6 +9,13 @@ enum {
     strGvcpCmdReadMemHdrCOUNT = 6
 };
 
+enum {
+    strGvcpCmdPktResendHdrSTREAMCHANNELIDX = 0,
+    strGvcpCmdPktResendHdrBLOCKIDRES = 2,
+    strGvcpCmdPktResendHdrFIRSTPKTID = 4,
+    strGvcpCmdPktResendHdrLASTPKTID = 8
+};
+
 /* Generic command header. */
 ; // To remove compiler warning (Bug with clang)
 #pragma pack(push, 1)
@@ -47,6 +54,17 @@ typedef struct {
     quint32 registerAddress;
 
 } strGvcpCmdReadRegHdr;
+#pragma pack(pop)
+
+/* Packet resend command header. */
+#pragma pack(push, 1)
+typedef struct {
+    quint16 streamChannelIdx;
+    quint16 blockIdRes;
+    quint32 firstPktId;
+    quint32 lastPktId;
+
+} strGvcpCmdPktResendHdr;
 #pragma pack(pop)
 
 #endif // GVCPCMDHEADERS_H
