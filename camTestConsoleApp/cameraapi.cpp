@@ -14,6 +14,7 @@ cameraApi::cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QH
 static quint16 streamPktSize;
 
 void cameraApi::slotGvspReadyRead() {
+    bool error = 0;
     QNetworkDatagram gvspPkt;
     strGvspDataBlockHdr streamHdr;
     strGvspGenericDataLeaderHdr leader;
@@ -25,6 +26,7 @@ void cameraApi::slotGvspReadyRead() {
     quint8 *dataPtr;
     qint32 expectedNoOfPackets;
     quint32 tempBuffer;
+    strGvcpCmdPktResendHdr resendHdr;
     QHash<quint32, QByteArray> frameHT;
     QHash<quint32, QByteArray> *frameHTPtr;
 
@@ -56,8 +58,12 @@ void cameraApi::slotGvspReadyRead() {
             imgLeaderHdr = gvspPopulateImageLeaderHdrFromNetwork(dataPtr);
             dataPtr += sizeof(strGvspImageDataLeaderHdr);
 
+            expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) / (streamPktSize - 20 - 8 - 8) + 1);
+            ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (streamPktSize - 20 - 8 - 8)) ? expectedNoOfPackets++ : expectedNoOfPackets;
+
             frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
                            QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
+            frameHT.reserve(expectedNoOfPackets);
             streamHT.insert(streamHdr.blockId$flag, frameHT);
 
             break;
@@ -82,7 +88,14 @@ void cameraApi::slotGvspReadyRead() {
                 ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (streamPktSize - 20 - 8 - 8)) ? expectedNoOfPackets++ : expectedNoOfPackets;
 
                 if (frameHTPtr->count() < (int)expectedNoOfPackets) {
-
+                    resendHdr.blockIdRes = streamHdr.blockId$flag;
+                    resendHdr.streamChannelIdx = 0;
+                    resendHdr.firstPktId = 1;
+                    resendHdr.lastPktId = expectedNoOfPackets;
+                    error = cameraRequestResend(resendHdr);
+                    if (error) {
+                        streamHT.remove(streamHdr.blockId$flag);
+                    }
                     qDebug() << "Enteries in block " << streamHdr.blockId$flag << " are " << frameHT.count();
                     qDebug() << "Enteries in streamHT are " << streamHT.count();
                 } else {
