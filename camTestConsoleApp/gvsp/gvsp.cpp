@@ -1,7 +1,7 @@
 #include "gvsp.h"
 #include "caminterface.h"
 
-strGvspDataBlockHdr gvspPopulateGenericDataHdr(const quint8 *dataPtr) {
+strGvspDataBlockHdr gvspPopulateGenericDataHdrFromNetwork(const quint8 *dataPtr) {
     strGvspDataBlockHdr streamHdr;
 
     streamHdr.status = qFromBigEndian(*(quint16 *)(dataPtr + strGvspDataBlockHdrSTATUS));
@@ -11,7 +11,7 @@ strGvspDataBlockHdr gvspPopulateGenericDataHdr(const quint8 *dataPtr) {
     return streamHdr;
 }
 
-strGvspDataBlockExtensionHdr gvspPopulateGenericDataExtensionHdr(const quint8 *dataPtr) {
+strGvspDataBlockExtensionHdr gvspPopulateGenericDataExtensionHdrFromNetwork(const quint8 *dataPtr) {
     strGvspDataBlockExtensionHdr extHdr;
 
     extHdr.extBlockId = qFromBigEndian(*(quint64 *)(dataPtr + strGvspDataBlockExtensionHdrEXTBLOCKID));
@@ -20,7 +20,7 @@ strGvspDataBlockExtensionHdr gvspPopulateGenericDataExtensionHdr(const quint8 *d
     return extHdr;
 }
 
-strGvspImageDataLeaderHdr gvspPopulateImageLeaderHdr(const quint8 *dataPtr) {
+strGvspImageDataLeaderHdr gvspPopulateImageLeaderHdrFromNetwork(const quint8 *dataPtr) {
     strGvspImageDataLeaderHdr imgLeaderHdr;
 
     imgLeaderHdr.fieldId$fieldCount = *(quint8 *)(dataPtr + strGvspImageDataLeaderHdrFIELDID$FIELDCOUNT);
@@ -39,7 +39,7 @@ strGvspImageDataLeaderHdr gvspPopulateImageLeaderHdr(const quint8 *dataPtr) {
     return imgLeaderHdr;
 }
 
-strGvspImageDataTrailerHdr gvspPopulateImageTrailerHdr(const quint8 *dataPtr) {
+strGvspImageDataTrailerHdr gvspPopulateImageTrailerHdrFromNetwork(const quint8 *dataPtr) {
     strGvspImageDataTrailerHdr imgTrailerHdr;
 
     imgTrailerHdr.reserved = qFromBigEndian(*(quint16 *)(dataPtr + strGvspImageDataTrailerHdrRESERVED));

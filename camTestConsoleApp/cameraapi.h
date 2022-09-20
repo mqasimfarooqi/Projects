@@ -18,7 +18,8 @@ const QList<QString> lookupTags = {
     "IntReg",
     "Integer",
     "StringReg",
-    "MaskedIntReg"
+    "MaskedIntReg",
+    "StructReg"
 };
 
 class cameraApi : public QObject
@@ -72,6 +73,7 @@ private:
     QDomDocument mCamXmlFile;
     QVector<quint8> mVectorPendingReq;
     QQueue<strGvcpCmdPktResendHdr> mQueuePktResendQueue;
+    QHash<quint16, QHash<quint32, QByteArray>> streamHT;
     quint8 mCamStatusFlags;
 };
 

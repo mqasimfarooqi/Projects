@@ -23,9 +23,10 @@ void cameraApi::slotGvspReadyRead() {
     strGvspImageDataTrailerHdr imgTrailerHdr;
     QByteArray dataArr;
     quint8 *dataPtr;
+    qint32 expectedNoOfPackets;
+    quint32 tempBuffer;
     QHash<quint32, QByteArray> frameHT;
     QHash<quint32, QByteArray> *frameHTPtr;
-    static QHash<quint16, QHash<quint32, QByteArray>> streamHT;
 
     /* Receive the datagram. */
     gvspPkt = mGvspSock.receiveDatagram();
@@ -33,13 +34,13 @@ void cameraApi::slotGvspReadyRead() {
     dataPtr = (quint8 *)dataArr.data();
 
     /* Populate generic stream header. */
-    streamHdr = gvspPopulateGenericDataHdr(dataPtr);
+    streamHdr = gvspPopulateGenericDataHdrFromNetwork(dataPtr);
     dataPtr += sizeof(strGvspDataBlockHdr);
 
     /* Parse extended generic header if it is preasent. */
     if (streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_EI) {
 
-        extHdr = gvspPopulateGenericDataExtensionHdr(dataPtr);
+        extHdr = gvspPopulateGenericDataExtensionHdrFromNetwork(dataPtr);
         dataPtr += sizeof(strGvspDataBlockExtensionHdr);
     }
 
@@ -52,10 +53,11 @@ void cameraApi::slotGvspReadyRead() {
 
         switch (leader.payloadType) {
         case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
-            imgLeaderHdr = gvspPopulateImageLeaderHdr(dataPtr);
+            imgLeaderHdr = gvspPopulateImageLeaderHdrFromNetwork(dataPtr);
             dataPtr += sizeof(strGvspImageDataLeaderHdr);
 
-            frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, QByteArray());
+            frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
+                           QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
             streamHT.insert(streamHdr.blockId$flag, frameHT);
 
             break;
@@ -68,12 +70,18 @@ void cameraApi::slotGvspReadyRead() {
 
         switch (trailer.payloadType) {
         case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
-            imgTrailerHdr = gvspPopulateImageTrailerHdr(dataPtr);
+            imgTrailerHdr = gvspPopulateImageTrailerHdrFromNetwork(dataPtr);
             dataPtr += sizeof(strGvspImageDataTrailerHdr);
 
             if (streamHT.contains(streamHdr.blockId$flag)) {
-                frameHT = streamHT[streamHdr.blockId$flag];
-                if (frameHT.count() < 3520) {
+                frameHTPtr = &streamHT[streamHdr.blockId$flag];
+                frameHTPtr->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
+
+                memcpy(&imgLeaderHdr, frameHTPtr->value(0).data(), sizeof(strGvspImageDataLeaderHdr));
+                expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) / (streamPktSize - 20 - 8 - 8) + 1);
+                ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (streamPktSize - 20 - 8 - 8)) ? expectedNoOfPackets++ : expectedNoOfPackets;
+
+                if (frameHTPtr->count() < (int)expectedNoOfPackets) {
 
                     qDebug() << "Enteries in block " << streamHdr.blockId$flag << " are " << frameHT.count();
                     qDebug() << "Enteries in streamHT are " << streamHT.count();
@@ -81,17 +89,15 @@ void cameraApi::slotGvspReadyRead() {
                     streamHT.remove(streamHdr.blockId$flag);
                 }
             }
-
             break;
         }
         break;
-
     case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
 
         if (streamHT.contains(streamHdr.blockId$flag)) {
             frameHTPtr = &streamHT[streamHdr.blockId$flag];
             frameHTPtr->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                               QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr), dataArr.count() - sizeof(strGvspDataBlockHdr)));
+                               QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr), (streamPktSize - 20 - 8 - 8)));
         }
 
         break;
