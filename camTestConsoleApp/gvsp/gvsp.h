@@ -33,6 +33,10 @@
 #define GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE                      (0x1)
 #define GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_RAW_DATA                   (0x2)
 
+#define IP_HEADER_SIZE                                              (20)
+#define UDP_HEADER_SIZE                                             (8)
+#define GVSP_HEADER_SIZE                                            (8)
+
 bool gvspFetchPacket(QUdpSocket& gvspSocket);
 
 /* Helper functions. */

@@ -6,6 +6,7 @@
 #include <QtXml>
 #include <QDateTime>
 #include <QTimer>
+#include <QtConcurrent>
 #include "gvcp/gvcpHeaders.h"
 #include "gvsp/gvsp.h"
 
