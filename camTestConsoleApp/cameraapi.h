@@ -11,8 +11,11 @@
 #include "gvsp/gvsp.h"
 
 #define BIT(x) (1 << x)
-#define MAX_ACK_FETCH_RETRY_COUNT (3)
-#define CAM_STATUS_FLAGS_INITIALIZED BIT(0)
+#define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
+#define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
+#define CAMERA_MAX_FRAME_BUFFER_SIZE (20)
+#define CAMERA_WAIT_FOR_ACK_MS (100)
+#define CAMERA_GVSP_PAYLOAD_SIZE (100)
 
 /* SwissKnife is not supported. */
 const QList<QString> lookupTags = {
@@ -28,7 +31,7 @@ class cameraApi : public QObject
     Q_OBJECT
 
 public:
-    explicit cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QHostAddress camIP, QObject *parent = nullptr);
+    explicit cameraApi(const QHostAddress hostIP, const QHostAddress camIP, const quint16 hostPort, QObject *parent = nullptr);
 
 signals:
     void signalResendRequested();
@@ -65,16 +68,16 @@ private:
 
     /* Private variables. */
     const QHostAddress mHostIPAddr;
-    const quint16 mGvcpHostPort;
     const QHostAddress mCamIPAddr;
+    const quint16 mGvcpHostPort;
     QThread mStreamingThread;
     QTimer mHeartBeatTimer;
     QUdpSocket mGvcpSock;
     QUdpSocket mGvspSock;
     QDomDocument mCamXmlFile;
     QVector<quint8> mVectorPendingReq;
-    QQueue<strGvcpCmdPktResendHdr> mQueuePktResendQueue;
-    QHash<quint16, QHash<quint32, QByteArray>> streamHT;
+    QQueue<quint16> mPktResendBlockIDQueue;
+    QHash<quint16, QHash<quint32, QByteArray>> mStreamHT;
     quint8 mCamStatusFlags;
 };
 

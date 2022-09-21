@@ -1,14 +1,14 @@
 #include "gvcp.h"
 #include "caminterface.h"
 
-unsigned char gvcpHelperReverseBits(unsigned char b) {
+unsigned char gvcpReverseBits(unsigned char b) {
    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
    b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
    b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
    return b;
 }
 
-void gvcpHelperFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
+void gvcpFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
 
     if (ackHeader.cmdSpecificAckHdr != nullptr) {
         switch (ackHeader.genericAckHdr.acknowledge) {
@@ -29,7 +29,7 @@ void gvcpHelperFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
     }
 }
 
-void gvcpHelperMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray) {
+void gvcpMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray) {
 
     char *dataPtr = dataArray.data() + sizeof(strGvcpAckHdr);
 
@@ -112,7 +112,7 @@ void gvcpHelperMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByt
     }
 }
 
-void gvcpHelperMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmdType, const QByteArray& cmdSpecificData) {
+void gvcpMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmdType, const QByteArray& cmdSpecificData) {
 
     const char *dataPtr = cmdSpecificData.data();
 
@@ -169,7 +169,7 @@ void gvcpHelperMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmd
     }
 }
 
-void gvcpHelperMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray, const QByteArray& cmdSpecificData, const quint16 reqId) {
+void gvcpMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray, const QByteArray& cmdSpecificData, const quint16 reqId) {
 
     strGvcpCmdHdr genericHdr;
 
@@ -181,22 +181,22 @@ void gvcpHelperMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray
 
     case GVCP_DISCOVERY_CMD:
         /* Construct generic header for command [GVCP_DISCOVERY_CMD]. */
-        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE | GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK);
+        genericHdr.flag = gvcpReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE | GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK);
         break;
 
     case GVCP_READMEM_CMD:
         /* Construct generic header for command [GVCP_READMEM_CMD]. */
-        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
+        genericHdr.flag = gvcpReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
         break;
 
     case GVCP_WRITEREG_CMD:
         /* Construct generic header for command [GVCP_WRITEREG_CMD]. */
-        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
+        genericHdr.flag = gvcpReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
         break;
 
     case GVCP_READREG_CMD:
         /* Construct generic header for command [GVCP_READREG_CMD]. */
-        genericHdr.flag = gvcpHelperReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
+        genericHdr.flag = gvcpReverseBits(GVCP_CMD_FLAG_ACKNOWLEDGE);
         break;
     }
 
@@ -236,7 +236,7 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
 
     if (!error && (ackHeader.genericAckHdr.length > 0) && tempArray.length()) {
 
-        gvcpHelperMakeCommandSpecificAckHeader(ackHeader, tempArray);
+        gvcpMakeCommandSpecificAckHeader(ackHeader, tempArray);
     } else {
 
         qDebug() << "Error: Command specific data in an ack cannot be empty";
@@ -249,7 +249,7 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
         if (ackHeader.cmdSpecificAckHdr) {
 
             /* Free the required memory in case of error. */
-            gvcpHelperFreeAckMemory(ackHeader);
+            gvcpFreeAckMemory(ackHeader);
         }
     }
 
@@ -272,13 +272,13 @@ bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray &c
     if (!error) {
 
         /* Popoulate the generic header with data. */
-        gvcpHelperMakeGenericCmdHeader(cmdType, dataArray, cmdSpecificData, reqId);
+        gvcpMakeGenericCmdHeader(cmdType, dataArray, cmdSpecificData, reqId);
 
         /* Append only if data length is greater than 0. */
         if (cmdSpecificData.length() > 0) {
 
             /* Populate command specific headers and append in the array. */
-            gvcpHelperMakeCmdSepcificCmdHeader(dataArray, cmdType, cmdSpecificData);
+            gvcpMakeCmdSepcificCmdHeader(dataArray, cmdType, cmdSpecificData);
         }
 
         datagram.setDestination(destAddr, port);

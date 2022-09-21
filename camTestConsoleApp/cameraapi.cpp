@@ -3,18 +3,19 @@
 #include "gvsp/gvsp.h"
 #include "quazip/JlCompress.h"
 
-cameraApi::cameraApi(const QHostAddress hostIP, const quint16 hostPort, const QHostAddress camIP, QObject *parent)
-    : QObject{parent}, mHostIPAddr(hostIP), mGvcpHostPort(hostPort), mCamIPAddr(camIP) {
+cameraApi::cameraApi(const QHostAddress hostIP, const QHostAddress camIP, const quint16 hostPort, QObject *parent)
+    : QObject{parent}, mHostIPAddr(hostIP), mCamIPAddr(camIP), mGvcpHostPort(hostPort) {
 
     mVectorPendingReq.clear();
     mCamStatusFlags = 0;
+
+    QThread::currentThread()->setObjectName("Control Thread");
     mStreamingThread.setObjectName("Streaming Thread");
 }
 
 static quint16 streamPktSize;
 
 void cameraApi::slotGvspReadyRead() {
-    bool error = 0;
     QNetworkDatagram gvspPkt;
     strGvspDataBlockHdr streamHdr;
     strGvspGenericDataLeaderHdr leader;
@@ -25,14 +26,17 @@ void cameraApi::slotGvspReadyRead() {
     QByteArray dataArr;
     quint8 *dataPtr;
     qint32 expectedNoOfPackets;
-    strGvcpCmdPktResendHdr resendHdr;
     QHash<quint32, QByteArray> frameHT;
-    QHash<quint32, QByteArray> *frameHTPtr;
 
     /* Receive the datagram. */
     gvspPkt = mGvspSock.receiveDatagram();
     dataArr = gvspPkt.data();
     dataPtr = (quint8 *)dataArr.data();
+
+    /* Remove the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
+    if (mStreamHT.count() > CAMERA_MAX_FRAME_BUFFER_SIZE) {
+        mStreamHT.remove(mStreamHT.begin().key());
+    }
 
     /* Populate generic stream header. */
     streamHdr = gvspPopulateGenericDataHdrFromNetwork(dataPtr);
@@ -64,7 +68,7 @@ void cameraApi::slotGvspReadyRead() {
             frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
                            QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
             frameHT.reserve(expectedNoOfPackets);
-            streamHT.insert(streamHdr.blockId$flag, frameHT);
+            mStreamHT.insert(streamHdr.blockId$flag, frameHT);
 
             break;
         }
@@ -77,40 +81,30 @@ void cameraApi::slotGvspReadyRead() {
         case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
             imgTrailerHdr = gvspPopulateImageTrailerHdrFromNetwork(dataPtr);
 
-            if (streamHT.contains(streamHdr.blockId$flag)) {
-                frameHTPtr = &streamHT[streamHdr.blockId$flag];
-                frameHTPtr->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
+            if (mStreamHT.contains(streamHdr.blockId$flag)) {
+                mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
 
-                memcpy(&imgLeaderHdr, frameHTPtr->value(0).data(), sizeof(strGvspImageDataLeaderHdr));
+                memcpy(&imgLeaderHdr, mStreamHT[streamHdr.blockId$flag].value(0).data(), sizeof(strGvspImageDataLeaderHdr));
                 expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                         (streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
                 ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                             expectedNoOfPackets++ : expectedNoOfPackets;
 
-                if (frameHTPtr->count() < (int)expectedNoOfPackets) {
-                    resendHdr.blockIdRes = streamHdr.blockId$flag;
-                    resendHdr.streamChannelIdx = 0;
-                    resendHdr.firstPktId = 1;
-                    resendHdr.lastPktId = expectedNoOfPackets;
-                    error = cameraAppendResendQueue(resendHdr);
-                    if (error) {
-                        streamHT.remove(streamHdr.blockId$flag);
-                    }
-                    qDebug() << "Enteries in block " << streamHdr.blockId$flag << " are " << frameHT.count();
-                    qDebug() << "Enteries in streamHT are " << streamHT.count();
+                if (mStreamHT[streamHdr.blockId$flag].count() < (int)expectedNoOfPackets) {
+                    mPktResendBlockIDQueue.enqueue(streamHdr.blockId$flag);
+                    emit signalResendRequested();
                 } else {
-                    streamHT.remove(streamHdr.blockId$flag);
+                    mStreamHT.remove(streamHdr.blockId$flag);
                 }
             }
             break;
         }
         break;
     case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
-        if (streamHT.contains(streamHdr.blockId$flag)) {
-            frameHTPtr = &streamHT[streamHdr.blockId$flag];
-            frameHTPtr->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                               QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr),
-                                          (streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
+        if (mStreamHT.contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
+            mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
+                                                    QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr),
+                                                               (streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
         }
         break;
     }
@@ -125,9 +119,43 @@ void cameraApi::slotCameraHeartBeat() {
 }
 
 void cameraApi::slotRequestResendRoutine() {
+    strGvcpCmdPktResendHdr resendHdr;
+    quint32 firstEmpty;
+    quint32 lastEmpty;
+    quint32 packetIdx = 1;
+    QHash<quint32, QByteArray> frameHT;
+    quint16 blockID;
 
-    /* Transmit a request to resubmit. */
-    cameraRequestResend(mQueuePktResendQueue.dequeue());
+    while (!mPktResendBlockIDQueue.empty()) {
+        blockID = mPktResendBlockIDQueue.dequeue();
+        frameHT = mStreamHT[blockID];
+
+        while (packetIdx < streamPktSize) {
+            for (; packetIdx < streamPktSize; packetIdx++) {
+                if (frameHT[packetIdx].isEmpty()) {
+                    break;
+                }
+            }
+            firstEmpty = packetIdx;
+            for (packetIdx = firstEmpty; packetIdx < streamPktSize; packetIdx++) {
+                if (!frameHT[packetIdx].isEmpty()) {
+                    break;
+                }
+            }
+            lastEmpty = packetIdx;
+
+            resendHdr.blockIdRes = blockID;
+            resendHdr.firstPktId = firstEmpty;
+            resendHdr.lastPktId = lastEmpty;
+            resendHdr.streamChannelIdx = 0;
+
+            /* Transmit a request to resubmit. */
+            cameraRequestResend(resendHdr);
+        }
+
+        qDebug() << "Size of Stream Hash Table = " << mStreamHT.count();
+        qDebug() << "Slot called with BlockID = " << blockID;
+    }
 }
 
 bool cameraApi::cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value) {
@@ -404,11 +432,11 @@ bool cameraApi::cameraWriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& wri
         /* Receive data in the array. */
         error = true;
         for (int retryCount = 0;
-            (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
+            (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
             /* Wait for the signal, for reception of first URL. */
-            if (mGvcpSock.waitForReadyRead(100)) {
+            if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
 
                 /* Receive the next pending ack. */
                 error = cameraFetchAck(ackHdr, reqId);
@@ -419,7 +447,7 @@ bool cameraApi::cameraWriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& wri
     if (!error && ackHdr.cmdSpecificAckHdr) {
 
         /* Free memory allocated by ack header. */
-        gvcpHelperFreeAckMemory(ackHdr);
+        gvcpFreeAckMemory(ackHdr);
     }
 
     return error;
@@ -446,7 +474,7 @@ bool cameraApi::cameraFetchAck(strNonStdGvcpAckHdr& ackHdr, const quint16 reqId)
         if (ackHdr.cmdSpecificAckHdr) {
 
             /* Free memory space acquired by command specific ack header for packed with undesired req_id. */
-            gvcpHelperFreeAckMemory(ackHdr);
+            gvcpFreeAckMemory(ackHdr);
         }
     }
 
@@ -484,11 +512,11 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
             /* Receive data in the array. */
             error = true;
             for (retry_count = 0;
-                (retry_count < MAX_ACK_FETCH_RETRY_COUNT) && error;
+                (retry_count < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
                 (retry_count++)) {
 
                 /* Wait for the signal, for reception of first URL. */
-                if (mGvcpSock.waitForReadyRead(100)) {
+                if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
 
                     /* Receive the next pending ack. */
                     error = cameraFetchAck(ackHdr, reqId);
@@ -520,7 +548,7 @@ bool cameraApi::cameraReadMemoryBlock(const quint32 address, const quint16 size,
             /* Free up memory space acquired by command specific header. */
             if (ackHdr.cmdSpecificAckHdr) {
 
-                gvcpHelperFreeAckMemory(ackHdr);
+                gvcpFreeAckMemory(ackHdr);
             }
 
             /* Increase the request ID for next transation. */
@@ -573,11 +601,11 @@ bool cameraApi::cameraFetchFirstUrl(QByteArray& byteArray)
         /* Receive data in the array. */
         error = true;
         for (int retryCount = 0;
-            (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
+            (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
             /* Wait for the signal, for reception of first URL. */
-            if (mGvcpSock.waitForReadyRead(100)) {
+            if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
 
                 /* Receive the next pending ack. */
                 error = cameraFetchAck(ackHdr, reqId);
@@ -594,7 +622,7 @@ bool cameraApi::cameraFetchFirstUrl(QByteArray& byteArray)
         byteArray.append(readMemAckHdr->data);
 
         /* Free memory allocated by ack header. */
-        gvcpHelperFreeAckMemory(ackHdr);
+        gvcpFreeAckMemory(ackHdr);
     }
 
     return error;
@@ -671,11 +699,11 @@ bool cameraApi::cameraReadRegisterValue(const QList<strGvcpCmdReadRegHdr> addres
         /* Receive data in the array. */
         error = true;
         for (int retryCount = 0;
-            (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
+            (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
             /* Wait for the signal, for reception of first URL. */
-            if (mGvcpSock.waitForReadyRead(100)) {
+            if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
 
                 /* Receive the next pending ack. */
                 error = cameraFetchAck(ackHdr, reqId);
@@ -694,7 +722,7 @@ bool cameraApi::cameraReadRegisterValue(const QList<strGvcpCmdReadRegHdr> addres
         }
 
         /* Free memory allocated by ack header. */
-        gvcpHelperFreeAckMemory(ackHdr);
+        gvcpFreeAckMemory(ackHdr);
     }
 
     return error;
@@ -723,11 +751,11 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDisc
         /* Try to fetch the replies for MAX_ACK_FETCH_RETRY_COUNT times. */
         error = true;
         for (int retryCount = 0;
-            (retryCount < MAX_ACK_FETCH_RETRY_COUNT) && error;
+            (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
             (retryCount++)) {
 
             /* Wait for the signal,. */
-            if (mGvcpSock.waitForReadyRead(100)) {
+            if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
 
                 /* Receive the next pending ack. */
                 error = cameraFetchAck(ackHdr, reqId);
@@ -739,7 +767,7 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDisc
 
         strGvcpAckDiscoveryHdr *ptr = (strGvcpAckDiscoveryHdr *)ackHdr.cmdSpecificAckHdr;
         memcpy(&discAckHdr, ptr, sizeof(strGvcpAckDiscoveryHdr));
-        gvcpHelperFreeAckMemory(ackHdr);
+        gvcpFreeAckMemory(ackHdr);
 
     } else {
 
@@ -749,7 +777,7 @@ bool cameraApi::cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDisc
     return error;
 }
 
-bool cameraApi::cameraRequestResend(const strGvcpCmdPktResendHdr &cmdHdr) {
+bool cameraApi::cameraRequestResend(const strGvcpCmdPktResendHdr& cmdHdr) {
     Q_ASSERT_X(mGvcpSock.isValid(), __FUNCTION__, "GVSP socket for UDP is invalid.");
     Q_ASSERT_X(!mCamIPAddr.isNull(), __FUNCTION__, "Camera IP address is not set.");
 
@@ -768,17 +796,6 @@ bool cameraApi::cameraRequestResend(const strGvcpCmdPktResendHdr &cmdHdr) {
     error = gvcpSendCmd(mGvcpSock, GVCP_PACKETRESEND_CMD, cmdSpecificData, mCamIPAddr, GVCP_DEFAULT_UDP_PORT, reqId);
 
     return error;
-}
-
-bool cameraApi::cameraAppendResendQueue(const strGvcpCmdPktResendHdr& cmdHdr) {
-
-    /* Enqueue the resend queue. */
-    mQueuePktResendQueue.enqueue(cmdHdr);
-
-    /* Emit the signal that a new request has been received. */
-    emit signalResendRequested();
-
-    return true;
 }
 
 bool cameraApi::cameraStartStream(const quint16 streamHostPort)
@@ -823,8 +840,9 @@ bool cameraApi::cameraStartStream(const quint16 streamHostPort)
     }
 
     if (!error) {
-        val = qToBigEndian(5000);
-        error = cameraWriteCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg", QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+        val = qToBigEndian(CAMERA_GVSP_PAYLOAD_SIZE);
+        error = cameraWriteCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg",
+                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
     }
 
     if (!error) {
@@ -834,7 +852,8 @@ bool cameraApi::cameraStartStream(const quint16 streamHostPort)
 
     if (!error) {
         val = qToBigEndian(0x1);
-        error = cameraWriteCameraAttribute(QList<QString>() << "AcquisitionStartReg", QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+        error = cameraWriteCameraAttribute(QList<QString>() << "AcquisitionStartReg",
+                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
     }
 
     return error;
@@ -893,7 +912,7 @@ bool cameraApi::cameraInitializeDevice() {
 
         qDebug() << "Camera initialized successfully.";
 
-        mCamStatusFlags |= CAM_STATUS_FLAGS_INITIALIZED;
+        mCamStatusFlags |= CAMERA_STATUS_FLAGS_INITIALIZED;
     }
 
     return error;

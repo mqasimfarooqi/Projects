@@ -55,10 +55,10 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader);
 bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray& cmdSpecificData, const QHostAddress& destAddr, const quint16 port, const quint16 reqId);
 
 /* Helper functions. */
-void gvcpHelperMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray);
-void gvcpHelperMakeCmdSepcificCmdHeader(QByteArray& datagram, const quint16 cmdType, const QByteArray& cmdSpecificData);
-void gvcpHelperMakeGenericCmdHeader(const quint16 cmdType, QByteArray& datagram, const QByteArray& cmdSpecificData, const quint16 reqId);
-void gvcpHelperFreeAckMemory(strNonStdGvcpAckHdr& ackHeader);
-unsigned char gvcpHelperReverseBits(unsigned char b);
+void gvcpMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray);
+void gvcpMakeCmdSepcificCmdHeader(QByteArray& datagram, const quint16 cmdType, const QByteArray& cmdSpecificData);
+void gvcpMakeGenericCmdHeader(const quint16 cmdType, QByteArray& datagram, const QByteArray& cmdSpecificData, const quint16 reqId);
+void gvcpFreeAckMemory(strNonStdGvcpAckHdr& ackHeader);
+unsigned char gvcpReverseBits(unsigned char b);
 
 #endif // GVCP_H
