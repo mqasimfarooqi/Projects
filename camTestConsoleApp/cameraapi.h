@@ -25,6 +25,13 @@ const QList<QString> lookupTags = {
     "StructReg"
 };
 
+/* General camera properties structure. */
+typedef struct {
+    quint8 statusFlags;
+    quint16 streamPktSize;
+
+} cameraProperties;
+
 class cameraApi : public QObject
 {
     Q_OBJECT
@@ -74,11 +81,10 @@ private:
     QUdpSocket mGvcpSock;
     QUdpSocket mGvspSock;
     QDomDocument mCamXmlFile;
+    cameraProperties mCamProps;
     QVector<quint8> mVectorPendingReq;
     QQueue<quint16> mPktResendBlockIDQueue;
     QHash<quint16, QHash<quint32, QByteArray>> mStreamHT;
-    quint8 mCamStatusFlags;
-    quint16 mStreamPktSize;
 };
 
 #endif // CAMERAAPI_H

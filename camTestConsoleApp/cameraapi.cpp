@@ -7,7 +7,7 @@ cameraApi::cameraApi(const QHostAddress hostIP, const QHostAddress camIP, const 
     : QObject{parent}, mHostIPAddr(hostIP), mCamIPAddr(camIP), mGvcpHostPort(hostPort) {
 
     mVectorPendingReq.clear();
-    mCamStatusFlags = 0;
+    mCamProps.statusFlags = 0;
 
     QThread::currentThread()->setObjectName("Control Thread");
     mStreamingThread.setObjectName("Streaming Thread");
@@ -23,7 +23,9 @@ void cameraApi::slotGvspReadyRead() {
     strGvspImageDataTrailerHdr imgTrailerHdr;
     QByteArray dataArr;
     quint8 *dataPtr;
-    qint32 expectedNoOfPackets;
+    quint32 expectedNoOfPackets;
+    quint16 leastBlockID;
+    QList<quint16> keys;
     QHash<quint32, QByteArray> frameHT;
 
     /* Receive the datagram. */
@@ -33,7 +35,15 @@ void cameraApi::slotGvspReadyRead() {
 
     /* Remove the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
     if (mStreamHT.count() > CAMERA_MAX_FRAME_BUFFER_SIZE) {
-        mStreamHT.remove(mStreamHT.constBegin().key());
+        keys = mStreamHT.keys();
+        leastBlockID = keys.constFirst();
+        for (int counter = 0; counter < keys.size(); counter++) {
+            if (keys.at(counter) < leastBlockID) {
+                leastBlockID = keys.at(counter);
+            }
+        }
+        qDebug() << "Removing hashtable entry with block ID = " << leastBlockID;
+        mStreamHT.remove(leastBlockID);
     }
 
     /* Populate generic stream header. */
@@ -59,8 +69,8 @@ void cameraApi::slotGvspReadyRead() {
             imgLeaderHdr = gvspPopulateImageLeaderHdrFromNetwork(dataPtr);
 
             expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                    (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
-            ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
+                                    (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+            ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                         expectedNoOfPackets++ : expectedNoOfPackets;
 
             frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
@@ -84,14 +94,13 @@ void cameraApi::slotGvspReadyRead() {
 
                 memcpy(&imgLeaderHdr, mStreamHT[streamHdr.blockId$flag].value(0).data(), sizeof(strGvspImageDataLeaderHdr));
                 expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                        (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
-                ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
+                                        (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+                ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                             expectedNoOfPackets++ : expectedNoOfPackets;
 
                 if (mStreamHT[streamHdr.blockId$flag].count() < (int)expectedNoOfPackets) {
                     mPktResendBlockIDQueue.enqueue(streamHdr.blockId$flag);
                     emit signalResendRequested();
-                    qDebug() << "Resend queue enqueued from " << QThread::currentThread();
                 } else {
                     qDebug() << "Packet received completely with block ID = " << streamHdr.blockId$flag;
                     mStreamHT.remove(streamHdr.blockId$flag);
@@ -104,7 +113,7 @@ void cameraApi::slotGvspReadyRead() {
         if (mStreamHT.contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
             mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
                                                     QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr),
-                                                               (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
+                                                               (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
         }
         break;
     }
@@ -121,12 +130,11 @@ void cameraApi::slotCameraHeartBeat() {
 void cameraApi::slotRequestResendRoutine() {
     strGvcpCmdPktResendHdr resendHdr;
     quint32 firstEmpty;
-    quint32 lastEmpty;
     quint32 packetIdx = 1;
     quint32 expectedNoOfPackets;
+    quint16 blockID;
     strGvspImageDataLeaderHdr imgLeaderHdr;
     QHash<quint32, QByteArray> frameHT;
-    quint16 blockID;
 
     while (!mPktResendBlockIDQueue.empty()) {
         blockID = mPktResendBlockIDQueue.dequeue();
@@ -134,11 +142,12 @@ void cameraApi::slotRequestResendRoutine() {
 
         memcpy(&imgLeaderHdr, frameHT.value(0).data(), sizeof(strGvspImageDataLeaderHdr));
         expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
-        ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
+                                (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+        ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                     expectedNoOfPackets++ : expectedNoOfPackets;
 
 #if 0 /* This part of the code is omitted because camera is unable to respond this fast to the exact packets missed. */
+        quint32 lastEmpty;
         while (packetIdx < expectedNoOfPackets) {
             for (; packetIdx < expectedNoOfPackets; packetIdx++) {
                 if (frameHT[packetIdx].isEmpty()) {
@@ -175,7 +184,6 @@ void cameraApi::slotRequestResendRoutine() {
         /* Transmit a request to resubmit. */
         cameraRequestResend(resendHdr);
 
-        qDebug() << "Resend queue dequeued from " << QThread::currentThread();
         qDebug() << "Size of Stream Hash Table = " << mStreamHT.count();
         qDebug() << "Slot called with BlockID = " << blockID;
     }
@@ -196,7 +204,7 @@ bool cameraApi::cameraXmlFetchChildElementValue(const QDomNode& parent, const QS
 }
 
 quint8 cameraApi::camStatusFlags() const {
-    return mCamStatusFlags;
+    return mCamProps.statusFlags;
 }
 
 quint32 byteArrayToUint32(const QByteArray& bytes) {
@@ -870,7 +878,7 @@ bool cameraApi::cameraStartStream(const quint16 streamHostPort)
 
     if (!error) {
         error = cameraReadCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg", values);
-        mStreamPktSize = qFromBigEndian((quint16)byteArrayToUint32(values.first().left(2)));
+        mCamProps.streamPktSize = qFromBigEndian((quint16)byteArrayToUint32(values.first().left(2)));
     }
 
     if (!error) {
@@ -935,7 +943,7 @@ bool cameraApi::cameraInitializeDevice() {
 
         qDebug() << "Camera initialized successfully.";
 
-        mCamStatusFlags |= CAMERA_STATUS_FLAGS_INITIALIZED;
+        mCamProps.statusFlags |= CAMERA_STATUS_FLAGS_INITIALIZED;
     }
 
     return error;
