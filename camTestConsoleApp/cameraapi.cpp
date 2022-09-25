@@ -35,7 +35,7 @@ void cameraApi::slotGvspReadyRead() {
 
     /* Remove the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
     if (mStreamHT.count() > CAMERA_MAX_FRAME_BUFFER_SIZE) {
-        mStreamHT.remove(mStreamHT.begin().key());
+        mStreamHT.remove(mStreamHT.constBegin().key());
     }
 
     /* Populate generic stream header. */
@@ -93,7 +93,9 @@ void cameraApi::slotGvspReadyRead() {
                 if (mStreamHT[streamHdr.blockId$flag].count() < (int)expectedNoOfPackets) {
                     mPktResendBlockIDQueue.enqueue(streamHdr.blockId$flag);
                     emit signalResendRequested();
+                    qDebug() << "Resend queue enqueued from " << QThread::currentThread();
                 } else {
+                    qDebug() << "Packet received completely with block ID = " << streamHdr.blockId$flag;
                     mStreamHT.remove(streamHdr.blockId$flag);
                 }
             }
@@ -123,6 +125,8 @@ void cameraApi::slotRequestResendRoutine() {
     quint32 firstEmpty;
     quint32 lastEmpty;
     quint32 packetIdx = 1;
+    quint32 expectedNoOfPackets;
+    strGvspImageDataLeaderHdr imgLeaderHdr;
     QHash<quint32, QByteArray> frameHT;
     quint16 blockID;
 
@@ -130,14 +134,20 @@ void cameraApi::slotRequestResendRoutine() {
         blockID = mPktResendBlockIDQueue.dequeue();
         frameHT = mStreamHT[blockID];
 
-        while (packetIdx < streamPktSize) {
-            for (; packetIdx < streamPktSize; packetIdx++) {
+        memcpy(&imgLeaderHdr, frameHT.value(0).data(), sizeof(strGvspImageDataLeaderHdr));
+        expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
+                                (streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+        ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
+                    expectedNoOfPackets++ : expectedNoOfPackets;
+
+        while (packetIdx < expectedNoOfPackets) {
+            for (; packetIdx < expectedNoOfPackets; packetIdx++) {
                 if (frameHT[packetIdx].isEmpty()) {
                     break;
                 }
             }
             firstEmpty = packetIdx;
-            for (packetIdx = firstEmpty; packetIdx < streamPktSize; packetIdx++) {
+            for (packetIdx = firstEmpty; packetIdx < expectedNoOfPackets; packetIdx++) {
                 if (!frameHT[packetIdx].isEmpty()) {
                     break;
                 }
@@ -153,6 +163,7 @@ void cameraApi::slotRequestResendRoutine() {
             cameraRequestResend(resendHdr);
         }
 
+        qDebug() << "Resend queue dequeued from " << QThread::currentThread();
         qDebug() << "Size of Stream Hash Table = " << mStreamHT.count();
         qDebug() << "Slot called with BlockID = " << blockID;
     }
