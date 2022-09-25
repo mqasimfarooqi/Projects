@@ -29,94 +29,100 @@ void cameraApi::slotGvspReadyRead() {
     QList<quint16> keys;
     QHash<quint32, QByteArray> frameHT;
 
-    /* Receive the datagram. */
-    gvspPkt = mGvspSock.receiveDatagram();
-    dataArr = gvspPkt.data();
-    dataPtr = (quint8 *)dataArr.data();
+    while (mGvspSock.hasPendingDatagrams()) {
 
-    /* Remove the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
-    if (mStreamHT.count() > CAMERA_MAX_FRAME_BUFFER_SIZE) {
-        keys = mStreamHT.keys();
-        leastBlockID = keys.constFirst();
-        for (int counter = 0; counter < keys.size(); counter++) {
-            if (keys.at(counter) < leastBlockID) {
-                leastBlockID = keys.at(counter);
+        /* Receive the datagram. */
+        gvspPkt = mGvspSock.receiveDatagram();
+        dataArr = gvspPkt.data();
+        dataPtr = (quint8 *)dataArr.data();
+
+        /* Remove the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
+        if (mStreamHT.count() > CAMERA_MAX_FRAME_BUFFER_SIZE) {
+            keys = mStreamHT.keys();
+            leastBlockID = keys.constFirst();
+            for (int counter = 0; counter < keys.size(); counter++) {
+                if (keys.at(counter) < leastBlockID) {
+                    leastBlockID = keys.at(counter);
+                }
             }
+            //qDebug() << "Removing hashtable entry with block ID = " << leastBlockID;
+            mStreamHT.remove(leastBlockID);
         }
-        qDebug() << "Removing hashtable entry with block ID = " << leastBlockID;
-        mStreamHT.remove(leastBlockID);
-    }
 
-    /* Populate generic stream header. */
-    streamHdr = gvspPopulateGenericDataHdrFromNetwork(dataPtr);
-    dataPtr += sizeof(strGvspDataBlockHdr);
+        /* Populate generic stream header. */
+        streamHdr = gvspPopulateGenericDataHdrFromNetwork(dataPtr);
+        dataPtr += sizeof(strGvspDataBlockHdr);
 
-    /* Parse extended generic header if it is preasent. */
-    if (streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_EI) {
+        /* Parse extended generic header if it is preasent. */
+        if (streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_EI) {
 
-        extHdr = gvspPopulateGenericDataExtensionHdrFromNetwork(dataPtr);
-        dataPtr += sizeof(strGvspDataBlockExtensionHdr);
-    }
-
-    /* Switch on the bases of packet format. */
-    switch ((streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT)
-             >> GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT_SHIFT) {
-    case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_LEADER_FORMAT:
-        leader.payloadTypeSpecific = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPESPECIFIC));
-        leader.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPE));
-
-        switch (leader.payloadType) {
-        case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
-            imgLeaderHdr = gvspPopulateImageLeaderHdrFromNetwork(dataPtr);
-
-            expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                    (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
-            ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
-                        expectedNoOfPackets++ : expectedNoOfPackets;
-
-            frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                           QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
-            frameHT.reserve(expectedNoOfPackets);
-            mStreamHT.insert(streamHdr.blockId$flag, frameHT);
-
-            break;
+            extHdr = gvspPopulateGenericDataExtensionHdrFromNetwork(dataPtr);
+            dataPtr += sizeof(strGvspDataBlockExtensionHdr);
         }
-        break;
-    case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_TRAILER_FORMAT:
-        trailer.reserved = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrRESERVED));
-        trailer.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrPAYLOADTYPE));
 
-        switch (trailer.payloadType) {
-        case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
-            imgTrailerHdr = gvspPopulateImageTrailerHdrFromNetwork(dataPtr);
+        /* Switch on the bases of packet format. */
+        switch ((streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT)
+                 >> GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT_SHIFT) {
+        case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_LEADER_FORMAT:
+            leader.payloadTypeSpecific = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPESPECIFIC));
+            leader.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPE));
 
-            if (mStreamHT.contains(streamHdr.blockId$flag)) {
-                mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
+            switch (leader.payloadType) {
+            case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
+                imgLeaderHdr = gvspPopulateImageLeaderHdrFromNetwork(dataPtr);
 
-                memcpy(&imgLeaderHdr, mStreamHT[streamHdr.blockId$flag].value(0).data(), sizeof(strGvspImageDataLeaderHdr));
                 expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                         (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
                 ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                             expectedNoOfPackets++ : expectedNoOfPackets;
 
-                if (mStreamHT[streamHdr.blockId$flag].count() < (int)expectedNoOfPackets) {
-                    mPktResendBlockIDQueue.enqueue(streamHdr.blockId$flag);
-                    emit signalResendRequested();
-                } else {
-                    qDebug() << "Packet received completely with block ID = " << streamHdr.blockId$flag;
-                    mStreamHT.remove(streamHdr.blockId$flag);
+                frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
+                               QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
+                frameHT.reserve(expectedNoOfPackets);
+                mStreamHT.insert(streamHdr.blockId$flag, frameHT);
+
+                break;
+            }
+            break;
+        case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_TRAILER_FORMAT:
+            trailer.reserved = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrRESERVED));
+            trailer.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrPAYLOADTYPE));
+
+            switch (trailer.payloadType) {
+            case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
+                imgTrailerHdr = gvspPopulateImageTrailerHdrFromNetwork(dataPtr);
+
+                if (mStreamHT.contains(streamHdr.blockId$flag)) {
+                    mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
+
+                    memcpy(&imgLeaderHdr, mStreamHT[streamHdr.blockId$flag].value(0).data(), sizeof(strGvspImageDataLeaderHdr));
+                    expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
+                                            (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+                    ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
+                                expectedNoOfPackets++ : expectedNoOfPackets;
+
+                    if (mStreamHT[streamHdr.blockId$flag].count() < (int)expectedNoOfPackets) {
+                        mPktResendBlockIDQueue.enqueue(streamHdr.blockId$flag);
+                        emit signalResendRequested();
+                    } else {
+                        //qDebug() << "Packet received completely with block ID = " << streamHdr.blockId$flag;
+                        mStreamHT.remove(streamHdr.blockId$flag);
+                    }
                 }
+                break;
+            }
+            break;
+        case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
+            if (mStreamHT.contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
+                mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
+                                                        QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr),
+                                                                   (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
+
+                if (mGvspSock.hasPendingDatagrams())
+                    qDebug() << "Any pending datagrams? Ans = " << mGvspSock.hasPendingDatagrams();
             }
             break;
         }
-        break;
-    case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
-        if (mStreamHT.contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
-            mStreamHT[streamHdr.blockId$flag].insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                                                    QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr),
-                                                               (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
-        }
-        break;
     }
 }
 
@@ -185,8 +191,8 @@ void cameraApi::slotRequestResendRoutine() {
         /* Transmit a request to resubmit. */
         cameraRequestResend(resendHdr);
 
-        qDebug() << "Size of Stream Hash Table = " << mStreamHT.count();
-        qDebug() << "Slot called with BlockID = " << blockID;
+        //qDebug() << "Size of Stream Hash Table = " << mStreamHT.count();
+        //qDebug() << "Slot called with BlockID = " << blockID;
     }
 }
 
