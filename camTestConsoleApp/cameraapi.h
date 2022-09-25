@@ -14,7 +14,7 @@
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 #define CAMERA_MAX_FRAME_BUFFER_SIZE (10)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (7000)
+#define CAMERA_GVSP_PAYLOAD_SIZE (6000)
 
 /* SwissKnife is not supported. */
 const QList<QString> lookupTags = {
@@ -29,6 +29,7 @@ const QList<QString> lookupTags = {
 typedef struct {
     quint8 statusFlags;
     quint16 streamPktSize;
+    quint16 streamChannelIdx;
 
 } cameraProperties;
 

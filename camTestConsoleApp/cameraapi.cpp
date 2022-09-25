@@ -8,6 +8,7 @@ cameraApi::cameraApi(const QHostAddress hostIP, const QHostAddress camIP, const 
 
     mVectorPendingReq.clear();
     mCamProps.statusFlags = 0;
+    mCamProps.streamChannelIdx = 0;
 
     QThread::currentThread()->setObjectName("Control Thread");
     mStreamingThread.setObjectName("Streaming Thread");
@@ -165,7 +166,7 @@ void cameraApi::slotRequestResendRoutine() {
             resendHdr.blockIdRes = blockID;
             resendHdr.firstPktId = firstEmpty;
             resendHdr.lastPktId = lastEmpty;
-            resendHdr.streamChannelIdx = 0;
+            resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
         }
 #else
         for (; packetIdx < expectedNoOfPackets; packetIdx++) {
@@ -178,7 +179,7 @@ void cameraApi::slotRequestResendRoutine() {
         resendHdr.blockIdRes = blockID;
         resendHdr.firstPktId = firstEmpty;
         resendHdr.lastPktId = expectedNoOfPackets;
-        resendHdr.streamChannelIdx = 0;
+        resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
 #endif
 
         /* Transmit a request to resubmit. */
