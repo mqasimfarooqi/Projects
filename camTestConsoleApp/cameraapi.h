@@ -6,7 +6,6 @@
 #include <QtXml>
 #include <QDateTime>
 #include <QTimer>
-#include <QtConcurrent>
 #include "gvcp/gvcpHeaders.h"
 #include "gvsp/gvsp.h"
 
@@ -15,7 +14,7 @@
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 #define CAMERA_MAX_FRAME_BUFFER_SIZE (5)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (5000)
+#define CAMERA_GVSP_PAYLOAD_SIZE (6000)
 
 /* SwissKnife is not supported. */
 const QList<QString> lookupTags = {
@@ -79,6 +78,7 @@ private:
     QQueue<quint16> mPktResendBlockIDQueue;
     QHash<quint16, QHash<quint32, QByteArray>> mStreamHT;
     quint8 mCamStatusFlags;
+    quint16 mStreamPktSize;
 };
 
 #endif // CAMERAAPI_H

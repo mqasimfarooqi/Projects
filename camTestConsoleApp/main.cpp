@@ -94,9 +94,9 @@ int main(int argc, char *argv[])
     }
 
     hostAddr.setAddress("192.168.10.3");
-    destAddr.setAddress("192.168.10.14");
-    hostPort = 55965;
-    cheetah = new cameraApi(hostAddr, hostPort, destAddr);
+    destAddr.setAddress("192.168.10.2");
+    hostPort = 55967;
+    cheetah = new cameraApi(hostAddr, destAddr, hostPort);
 
     destAddr.setAddress("255.255.255.255");
     cheetah->cameraInitializeDevice();
