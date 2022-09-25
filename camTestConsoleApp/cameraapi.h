@@ -12,9 +12,9 @@
 #define BIT(x) (1 << x)
 #define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
-#define CAMERA_MAX_FRAME_BUFFER_SIZE (5)
+#define CAMERA_MAX_FRAME_BUFFER_SIZE (10)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (6000)
+#define CAMERA_GVSP_PAYLOAD_SIZE (7000)
 
 /* SwissKnife is not supported. */
 const QList<QString> lookupTags = {

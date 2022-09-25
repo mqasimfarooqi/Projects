@@ -138,6 +138,7 @@ void cameraApi::slotRequestResendRoutine() {
         ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mStreamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                     expectedNoOfPackets++ : expectedNoOfPackets;
 
+#if 0 /* This part of the code is omitted because camera is unable to respond this fast to the exact packets missed. */
         while (packetIdx < expectedNoOfPackets) {
             for (; packetIdx < expectedNoOfPackets; packetIdx++) {
                 if (frameHT[packetIdx].isEmpty()) {
@@ -156,10 +157,23 @@ void cameraApi::slotRequestResendRoutine() {
             resendHdr.firstPktId = firstEmpty;
             resendHdr.lastPktId = lastEmpty;
             resendHdr.streamChannelIdx = 0;
-
-            /* Transmit a request to resubmit. */
-            cameraRequestResend(resendHdr);
         }
+#else
+        for (; packetIdx < expectedNoOfPackets; packetIdx++) {
+            if (frameHT[packetIdx].isEmpty()) {
+                break;
+            }
+        }
+        firstEmpty = packetIdx;
+
+        resendHdr.blockIdRes = blockID;
+        resendHdr.firstPktId = firstEmpty;
+        resendHdr.lastPktId = expectedNoOfPackets;
+        resendHdr.streamChannelIdx = 0;
+#endif
+
+        /* Transmit a request to resubmit. */
+        cameraRequestResend(resendHdr);
 
         qDebug() << "Resend queue dequeued from " << QThread::currentThread();
         qDebug() << "Size of Stream Hash Table = " << mStreamHT.count();
