@@ -1,6 +1,6 @@
 QT -= gui
 
-QT += core xml network
+QT += core xml network concurrent
 
 CONFIG += c++17 console
 CONFIG -= app_bundle
@@ -33,6 +33,7 @@ SOURCES += \
         gvcp/gvcp.cpp \
         gvsp/gvsp.cpp \
         main.cpp \
+        packethandler.cpp \
         quazip/JlCompress.cpp \
         quazip/qioapi.cpp \
         quazip/quaadler32.cpp \
@@ -62,6 +63,7 @@ HEADERS += \
     gvcp/gvcpHeaders.h \
     gvsp/gvsp.h \
     gvsp/gvspHeaders.h \
+    packethandler.h \
     quazip/JlCompress.h \
     quazip/ioapi.h \
     quazip/minizip_crypt.h \
