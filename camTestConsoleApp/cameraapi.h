@@ -8,13 +8,15 @@
 #include <QTimer>
 #include "gvcp/gvcpHeaders.h"
 #include "gvsp/gvsp.h"
+#include "packethandler.h"
 
 #define BIT(x) (1 << x)
+#define CAMERA_MAX_WORKER_THREAD_COUNT (3)
 #define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 #define CAMERA_MAX_FRAME_BUFFER_SIZE (10)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (6000)
+#define CAMERA_GVSP_PAYLOAD_SIZE (9000)
 
 /* SwissKnife is not supported. */
 const QList<QString> lookupTags = {
@@ -25,14 +27,6 @@ const QList<QString> lookupTags = {
     "StructReg"
 };
 
-/* General camera properties structure. */
-typedef struct {
-    quint8 statusFlags;
-    quint16 streamPktSize;
-    quint16 streamChannelIdx;
-
-} cameraProperties;
-
 class cameraApi : public QObject
 {
     Q_OBJECT
@@ -42,11 +36,12 @@ public:
 
 signals:
     void signalResendRequested();
+    void signalDatagramEnqueued();
 
 public slots:
-    void slotGvspReadyRead();
     void slotCameraHeartBeat();
     void slotRequestResendRoutine();
+    void slotGvspReadyRead();
 
 public:
     /* Public functions that need to be exposed for applications. */
@@ -77,13 +72,16 @@ private:
     const QHostAddress mHostIPAddr;
     const QHostAddress mCamIPAddr;
     const quint16 mGvcpHostPort;
+    QMutex mMutex;
     QThread mStreamingThread;
+    QList<QThread> mListStreamWorkingThread;
     QTimer mHeartBeatTimer;
     QUdpSocket mGvcpSock;
     QUdpSocket mGvspSock;
     QDomDocument mCamXmlFile;
-    cameraProperties mCamProps;
+    CameraProperties mCamProps;
     QVector<quint8> mVectorPendingReq;
+    QQueue<QNetworkDatagram> mStreamReceiveQueue;
     QQueue<quint16> mPktResendBlockIDQueue;
     QHash<quint16, QHash<quint32, QByteArray>> mStreamHT;
 };
