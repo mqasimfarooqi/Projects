@@ -18,6 +18,9 @@
 #define CAMERA_WAIT_FOR_ACK_MS (100)
 #define CAMERA_GVSP_PAYLOAD_SIZE (5000)
 
+#define CAMERA_API_STATUS_SUCCESS (0)
+#define CAMERA_API_STATUS_FAILED (1)
+
 /* SwissKnife is not supported. */
 const QList<QString> lookupTags = {
     "IntReg",
@@ -45,28 +48,27 @@ public slots:
 
 public:
     /* Public functions that need to be exposed for applications. */
-    bool cameraReadCameraAttribute(const QList<QString>& attributeList, QList<QByteArray>& regValues);
-    bool cameraWriteCameraAttribute(const QList<QString>& attributeList, const QList<QByteArray>& regValues);
-    bool cameraWriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& writeUnits);
-    bool cameraReadRegisterValue(const QList<strGvcpCmdReadRegHdr> addressList, QList<quint32>& regValues);
-    bool cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDiscoveryHdr& discAckHdr);
-    bool cameraStartStream(const quint16 streamHostPort);
-    bool cameraInitializeDevice();
+    quint32 cameraReadCameraAttribute(const QList<QString>& attributeList, QList<QByteArray>& regValues);
+    quint32 cameraWriteCameraAttribute(const QList<QString>& attributeList, const QList<QByteArray>& regValues);
+    quint32 cameraWriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& writeUnits);
+    quint32 cameraReadRegisterValue(const QList<strGvcpCmdReadRegHdr> addressList, QList<quint32>& regValues);
+    quint32 cameraDiscoverDevice(const QHostAddress destAddr, strGvcpAckDiscoveryHdr& discAckHdr);
+    quint32 cameraStartStream(const quint16 streamHostPort);
+    quint32 cameraInitializeDevice();
 
     /* Getters and setters */
     quint8 camStatusFlags() const;
 
 private:
     /* Private camera functionalities for this API. */
-    bool cameraReadXmlFileFromDevice();
-    bool cameraRequestResend(const strGvcpCmdPktResendHdr& cmdHdr);
-    bool cameraAppendResendQueue(const strGvcpCmdPktResendHdr& cmdHdr);
-    bool cameraFetchAck(strNonStdGvcpAckHdr& ack_hdr, const quint16 reqId);
-    bool cameraReadMemoryBlock(const quint32 address, const quint16 size, QByteArray& returnedData);
-    bool cameraFetchFirstUrl(QByteArray& byteArray);
-    bool cameraXmlFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, QByteArray& xmlData);
-    bool cameraXmlFetchAttrElement(const QString& attributeName, QDomNode& node);
-    bool cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value);
+    quint32 cameraReadXmlFileFromDevice();
+    quint32 cameraRequestResend(const strGvcpCmdPktResendHdr& cmdHdr);
+    quint32 cameraFetchAck(strNonStdGvcpAckHdr& ack_hdr, const quint16 reqId);
+    quint32 cameraReadMemoryBlock(const quint32 address, const quint16 size, QByteArray& returnedData);
+    quint32 cameraFetchFirstUrl(QByteArray& byteArray);
+    quint32 cameraXmlFetchXmlFromDevice(const QByteArray fileName, const QByteArray startAddress, const QByteArray size, QByteArray& xmlData);
+    quint32 cameraXmlFetchAttrElement(const QString& attributeName, QDomNode& node);
+    quint32 cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value);
 
     /* Private variables. */
     const QHostAddress mHostIPAddr;

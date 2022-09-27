@@ -3,33 +3,33 @@
 /* This function populates the relevant headers sends the packet. */
 bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram) {
 
-    bool error = false;
+    quint32 error = CAMERA_INTERFACE_STATUS_SUCCESS;
 
     /* Check to see if the pointer is not null. */
     if (!udpSock.isValid()) {
-        error = true;
+        error = CAMERA_INTERFACE_STATUS_FAILED;
         qDebug() << "Error: Udp socket pointer is invalid.";
 
     } else if (!(datagram.data().length() > 0)) {
-        error = true;
+        error = CAMERA_INTERFACE_STATUS_FAILED;
         qDebug() << "Error: No valid data present in the datagram.";
 
     } else if (datagram.destinationAddress().isNull()) {
-        error = true;
+        error = CAMERA_INTERFACE_STATUS_FAILED;
         qDebug() << "Error: Incorrect destination address for the datagram.";
 
     } else if (!(datagram.destinationPort() > 0)) {
-        error = true;
+        error = CAMERA_INTERFACE_STATUS_FAILED;
         qDebug() << "Error: Incorrect destination port for the datagram.";
     }
 
-    if (!error) {
+    if (error == CAMERA_INTERFACE_STATUS_SUCCESS) {
 
         /* Write datagram to the udp socket. */
         if(!(udpSock.writeDatagram(datagram) > 0)) {
 
             qDebug() << "Error: Error sending datagram.";
-            error = true;
+            error = CAMERA_INTERFACE_STATUS_FAILED;
         }
     }
 
@@ -38,12 +38,12 @@ bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& dat
 
 bool caminterface::camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& datagram)
 {
-    bool error = false;
+    quint32 error = CAMERA_INTERFACE_STATUS_SUCCESS;
 
     /* Check to see if the pointer is not null. */
     if (!udpSock.isValid() || !(udpSock.hasPendingDatagrams())) {
 
-        error = true;
+        error = CAMERA_INTERFACE_STATUS_FAILED;
         qDebug() << "Error: Cannot receive UDP packet either due to "
                     "invalid pointer to udp socket or there are no pending datagrams.";
 

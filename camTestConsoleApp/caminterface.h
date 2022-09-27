@@ -7,6 +7,9 @@
 #include <QtNetwork>
 #include <QDataStream>
 
+#define CAMERA_INTERFACE_STATUS_SUCCESS (0)
+#define CAMERA_INTERFACE_STATUS_FAILED (1)
+
 class caminterface
 {
 

@@ -13,7 +13,7 @@ PacketHandler::PacketHandler(QHash<quint16, QHash<quint32, QByteArray>> *streamH
 }
 
 void PacketHandler::slotServicePendingPackets() {
-    bool error = false;
+    quint32 error = CAMERA_API_STATUS_SUCCESS;
     QNetworkDatagram gvspPkt;
     strGvspDataBlockHdr streamHdr;
     strGvspGenericDataLeaderHdr leader;

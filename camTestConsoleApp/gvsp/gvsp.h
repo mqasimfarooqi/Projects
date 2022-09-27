@@ -39,9 +39,9 @@
 #define GVSP_HEADER_SIZE                                            (8)
 
 /* Helper functions. */
-bool gvspPopulateGenericDataHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockHdr& hdr);
-bool gvspPopulateGenericDataExtensionHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockExtensionHdr& hdr);
-bool gvspPopulateImageLeaderHdrFromBigEndian(const quint8 *dataPtr, strGvspImageDataLeaderHdr& hdr);
-bool gvspPopulateImageTrailerHdrFromBigEndian(const quint8 *dataPtr, strGvspImageDataTrailerHdr& hdr);
+qint32 gvspPopulateGenericDataHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockHdr& hdr);
+qint32 gvspPopulateGenericDataExtensionHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockExtensionHdr& hdr);
+qint32 gvspPopulateImageLeaderHdrFromBigEndian(const quint8 *dataPtr, strGvspImageDataLeaderHdr& hdr);
+qint32 gvspPopulateImageTrailerHdrFromBigEndian(const quint8 *dataPtr, strGvspImageDataTrailerHdr& hdr);
 
 #endif // GVSP_H
