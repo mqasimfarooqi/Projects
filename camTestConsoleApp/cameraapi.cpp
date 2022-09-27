@@ -18,7 +18,9 @@ cameraApi::cameraApi(const QHostAddress hostIP, const QHostAddress camIP, const 
 void cameraApi::slotGvspReadyRead() {
 
     while (mGvspSock.hasPendingDatagrams()) {
+        mMutex.lock();
         mStreamReceiveQueue.enqueue(mGvspSock.receiveDatagram());
+        mMutex.unlock();
     }
 
     emit signalDatagramEnqueued();
@@ -753,6 +755,17 @@ bool cameraApi::cameraStartStream(const quint16 streamHostPort)
     }
 
     if (!error) {
+        val = qToBigEndian(CAMERA_GVSP_PAYLOAD_SIZE);
+        error = cameraWriteCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg",
+                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+    }
+
+    if (!error) {
+        error = cameraReadCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg", values);
+        mCamProps.streamPktSize = qFromBigEndian((quint16)byteArrayToUint32(values.first().left(2)));
+    }
+
+    if (!error) {
 
         /* Write the port to listen to for Gvsp packets. */
         val = qToBigEndian(streamHostPort);
@@ -792,17 +805,6 @@ bool cameraApi::cameraStartStream(const quint16 streamHostPort)
                 mStreamingThread.start();
             }
         }
-    }
-
-    if (!error) {
-        val = qToBigEndian(CAMERA_GVSP_PAYLOAD_SIZE);
-        error = cameraWriteCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg",
-                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
-    }
-
-    if (!error) {
-        error = cameraReadCameraAttribute(QList<QString>() << "GevSCPSPacketSizeReg", values);
-        mCamProps.streamPktSize = qFromBigEndian((quint16)byteArrayToUint32(values.first().left(2)));
     }
 
     if (!error) {
