@@ -38,44 +38,10 @@
 #define UDP_HEADER_SIZE                                             (8)
 #define GVSP_HEADER_SIZE                                            (8)
 
-bool gvspFetchPacket(QUdpSocket& gvspSocket);
-
 /* Helper functions. */
-inline strGvspDataBlockHdr gvspPopulateGenericDataHdrFromNetwork(const quint8 *dataPtr) {
-    strGvspDataBlockHdr streamHdr;
-    streamHdr.status = qFromBigEndian(*(quint16 *)(dataPtr + strGvspDataBlockHdrSTATUS));
-    streamHdr.blockId$flag = qFromBigEndian(*(quint16 *)(dataPtr + strGvspDataBlockHdrBLOCKID$FLAG));
-    streamHdr.extId_res_pktFmt_pktID$res = qFromBigEndian(*(quint32 *)(dataPtr + strGvspDataBlockHdrEXTIDRESPKTFMTPKTIDRES));
-    return streamHdr;
-}
-inline strGvspDataBlockExtensionHdr gvspPopulateGenericDataExtensionHdrFromNetwork(const quint8 *dataPtr) {
-    strGvspDataBlockExtensionHdr extHdr;
-    extHdr.extBlockId = qFromBigEndian(*(quint64 *)(dataPtr + strGvspDataBlockExtensionHdrEXTBLOCKID));
-    extHdr.extPacketId = qFromBigEndian(*(quint32 *)(dataPtr + strGvspDataBlockExtensionHdrEXTPACKETID));
-    return extHdr;
-}
-inline strGvspImageDataLeaderHdr gvspPopulateImageLeaderHdrFromNetwork(const quint8 *dataPtr) {
-    strGvspImageDataLeaderHdr imgLeaderHdr;
-    imgLeaderHdr.fieldId$fieldCount = *(quint8 *)(dataPtr + strGvspImageDataLeaderHdrFIELDID$FIELDCOUNT);
-    imgLeaderHdr.reserved = *(quint8 *)(dataPtr + strGvspImageDataLeaderHdrRESERVED);
-    imgLeaderHdr.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspImageDataLeaderHdrPAYLOADTYPE));
-    imgLeaderHdr.timestampHigh = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrTIMESTAMPHIGH));
-    imgLeaderHdr.timestampLow = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrTIMESTAMPLOW));
-    imgLeaderHdr.pixelFormat = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrPIXELFORMAT));
-    imgLeaderHdr.sizeX = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrSIZEX));
-    imgLeaderHdr.sizeY = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrSIZEY));
-    imgLeaderHdr.offsetX = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrOFFSETX));
-    imgLeaderHdr.offsetY = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataLeaderHdrOFFSETY));
-    imgLeaderHdr.paddingX = qFromBigEndian(*(quint16 *)(dataPtr + strGvspImageDataLeaderHdrPADDINGX));
-    imgLeaderHdr.paddingY = qFromBigEndian(*(quint16 *)(dataPtr + strGvspImageDataLeaderHdrPADDINGY));
-    return imgLeaderHdr;
-}
-inline strGvspImageDataTrailerHdr gvspPopulateImageTrailerHdrFromNetwork(const quint8 *dataPtr) {
-    strGvspImageDataTrailerHdr imgTrailerHdr;
-    imgTrailerHdr.reserved = qFromBigEndian(*(quint16 *)(dataPtr + strGvspImageDataTrailerHdrRESERVED));
-    imgTrailerHdr.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspImageDataTrailerHdrPAYLOADTYPE));
-    imgTrailerHdr.sizeY = qFromBigEndian(*(quint32 *)(dataPtr + strGvspImageDataTrailerHdrSIZEY));
-    return imgTrailerHdr;
-}
+bool gvspPopulateGenericDataHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockHdr& hdr);
+bool gvspPopulateGenericDataExtensionHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockExtensionHdr& hdr);
+bool gvspPopulateImageLeaderHdrFromBigEndian(const quint8 *dataPtr, strGvspImageDataLeaderHdr& hdr);
+bool gvspPopulateImageTrailerHdrFromBigEndian(const quint8 *dataPtr, strGvspImageDataTrailerHdr& hdr);
 
 #endif // GVSP_H

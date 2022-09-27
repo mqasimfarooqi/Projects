@@ -16,12 +16,14 @@ cameraApi::cameraApi(const QHostAddress hostIP, const QHostAddress camIP, const 
 }
 
 void cameraApi::slotGvspReadyRead() {
+    quint8 limiter = 0;
 
+    mMutex.lock();
     while (mGvspSock.hasPendingDatagrams()) {
-        mMutex.lock();
+        limiter++;
         mStreamReceiveQueue.enqueue(mGvspSock.receiveDatagram());
-        mMutex.unlock();
     }
+    mMutex.unlock();
 
     emit signalDatagramEnqueued();
 }
