@@ -22,6 +22,9 @@ void cameraApi::slotGvspReadyRead() {
     while (mGvspSock.hasPendingDatagrams()) {
         limiter++;
         mStreamReceiveQueue.enqueue(mGvspSock.receiveDatagram());
+        if (limiter > 10) {
+            break;
+        }
     }
     mMutex.unlock();
 
