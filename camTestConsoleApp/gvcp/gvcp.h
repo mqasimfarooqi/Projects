@@ -6,6 +6,7 @@
 #include <QUdpSocket>
 #include <QtNetwork>
 #include "gvcp/gvcpHeaders.h"
+#include "gigev.h"
 
 /* Device XML related defines. */
 #define DEVICE_MANIFEST_TABLE_ADDRESS   (0x0934)
@@ -51,8 +52,8 @@
 #define GVCP_CMD_FLAG_DISCOVERY_BROADCAST_ACK BIT(3)
 
 /* Functions which send/receive GVCP packets. */
-bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader);
-bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray& cmdSpecificData, const QHostAddress& destAddr, const quint16 port, const quint16 reqId);
+quint32 gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader);
+quint32 gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray& cmdSpecificData, const QHostAddress& destAddr, const quint16 port, const quint16 reqId);
 
 /* Helper functions. */
 void gvcpMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray);

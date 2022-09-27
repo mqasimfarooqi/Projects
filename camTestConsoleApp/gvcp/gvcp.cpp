@@ -9,7 +9,6 @@ unsigned char gvcpReverseBits(unsigned char b) {
 }
 
 void gvcpFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
-
     if (ackHeader.cmdSpecificAckHdr != nullptr) {
         switch (ackHeader.genericAckHdr.acknowledge) {
         case GVCP_DISCOVERY_ACK:
@@ -30,7 +29,6 @@ void gvcpFreeAckMemory(strNonStdGvcpAckHdr& ackHeader) {
 }
 
 void gvcpMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray& dataArray) {
-
     char *dataPtr = dataArray.data() + sizeof(strGvcpAckHdr);
 
     if (ackHeader.genericAckHdr.acknowledge == GVCP_DISCOVERY_ACK) {
@@ -113,7 +111,6 @@ void gvcpMakeCommandSpecificAckHeader(strNonStdGvcpAckHdr& ackHeader, QByteArray
 }
 
 void gvcpMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmdType, const QByteArray& cmdSpecificData) {
-
     const char *dataPtr = cmdSpecificData.data();
 
     /* Check the correct command type and populate the command specific header. */
@@ -170,7 +167,6 @@ void gvcpMakeCmdSepcificCmdHeader(QByteArray& dataArray, const quint16 cmdType, 
 }
 
 void gvcpMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray, const QByteArray& cmdSpecificData, const quint16 reqId) {
-
     strGvcpCmdHdr genericHdr;
 
     /* Initialize memory to 0. */
@@ -211,15 +207,13 @@ void gvcpMakeGenericCmdHeader(const quint16 cmdType, QByteArray& dataArray, cons
     dataArray.append((char *)&genericHdr, sizeof(genericHdr));
 }
 
-bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
-
-    bool error = false;
+quint32 gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
+    quint32 error = false;
     QByteArray tempArray;
     QNetworkDatagram datagram = { 0 };
 
     /* Receive datagram. */
     error = caminterface::camGigeVEthReceiveAck(udpSock, datagram);
-
     if (!error && datagram.data().length()) {
 
         /* A pointer pointing to the data of byte array. */
@@ -234,7 +228,7 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
         ackHeader.genericAckHdr.ackId = qFromBigEndian(*(quint16 *)(tempArray.data() + strGvcpAckHdrACKID));
     }
 
-    if (!error && (ackHeader.genericAckHdr.length > 0) && tempArray.length()) {
+    if ((error == false) && (ackHeader.genericAckHdr.length > 0) && tempArray.length()) {
 
         gvcpMakeCommandSpecificAckHeader(ackHeader, tempArray);
     } else {
@@ -243,7 +237,7 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
         error = true;
     }
 
-    if (error) {
+    if (error == true) {
 
         /* Was memory allocated for a command specific header? */
         if (ackHeader.cmdSpecificAckHdr) {
@@ -256,9 +250,8 @@ bool gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
     return (error);
 }
 
-bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray &cmdSpecificData,
-                 const QHostAddress &destAddr, const quint16 port, const quint16 reqId)
-{
+quint32 gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray &cmdSpecificData,
+                    const QHostAddress &destAddr, const quint16 port, const quint16 reqId) {
     bool error = false;
     QNetworkDatagram datagram;
     QByteArray dataArray;
@@ -288,11 +281,3 @@ bool gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray &c
 
     return error;
 }
-
-
-
-
-
-
-
-

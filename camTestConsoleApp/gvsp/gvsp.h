@@ -4,6 +4,7 @@
 #include <QUdpSocket>
 #include <QtEndian>
 #include "gvsp/gvspHeaders.h"
+#include "gigev.h"
 
 #define GVSP_PAYLOAD_IMAGE                  (0x0001)
 #define GVSP_PAYLOAD_RAWDATA                (0x0002)

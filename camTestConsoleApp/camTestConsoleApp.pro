@@ -57,6 +57,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     cameraapi.h \
     caminterface.h \
+    gigev.h \
     gvcp/gvcp.h \
     gvcp/gvcpAckHeaders.h \
     gvcp/gvcpCmdHeaders.h \
