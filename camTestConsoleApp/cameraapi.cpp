@@ -43,57 +43,36 @@ void cameraApi::slotRequestResendRoutine() {
     strGvspImageDataLeaderHdr imgLeaderHdr;
     QHash<quint32, QByteArray> frameHT;
 
-    while (!mPktResendBlockIDQueue.empty()) {
-        blockID = mPktResendBlockIDQueue.dequeue();
-        frameHT = mStreamHT[blockID];
+    mMutex.lock();
+    blockID = mPktResendBlockIDQueue.dequeue();
+    mMutex.unlock();
+    frameHT = mStreamHT[blockID];
 
-        memcpy(&imgLeaderHdr, frameHT.value(0).data(), sizeof(strGvspImageDataLeaderHdr));
-        expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
-        ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
-                    expectedNoOfPackets++ : expectedNoOfPackets;
+    memcpy(&imgLeaderHdr, frameHT.value(0).data(), sizeof(strGvspImageDataLeaderHdr));
+    expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
+                            (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+    ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
+                expectedNoOfPackets++ : expectedNoOfPackets;
 
-#if 0 /* This part of the code is omitted because camera is unable to respond this fast to the exact packets missed. */
-        quint32 lastEmpty;
-        while (packetIdx < expectedNoOfPackets) {
-            for (; packetIdx < expectedNoOfPackets; packetIdx++) {
-                if (frameHT[packetIdx].isEmpty()) {
-                    break;
-                }
-            }
-            firstEmpty = packetIdx;
-            for (packetIdx = firstEmpty; packetIdx < expectedNoOfPackets; packetIdx++) {
-                if (!frameHT[packetIdx].isEmpty()) {
-                    break;
-                }
-            }
-            lastEmpty = packetIdx;
-
-            resendHdr.blockIdRes = blockID;
-            resendHdr.firstPktId = firstEmpty;
-            resendHdr.lastPktId = lastEmpty;
-            resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
+    for (; packetIdx < expectedNoOfPackets; packetIdx++) {
+        if (frameHT[packetIdx].isEmpty()) {
+            break;
         }
-#else
-        for (; packetIdx < expectedNoOfPackets; packetIdx++) {
-            if (frameHT[packetIdx].isEmpty()) {
-                break;
-            }
-        }
-        firstEmpty = packetIdx;
-
-        resendHdr.blockIdRes = blockID;
-        resendHdr.firstPktId = firstEmpty;
-        resendHdr.lastPktId = expectedNoOfPackets;
-        resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
-#endif
-
-        qDebug() << "Executing resend routine for block ID = " << resendHdr.blockIdRes
-                 << " from packet " << resendHdr.firstPktId << " to " << resendHdr.lastPktId;
-
-        /* Transmit a request to resubmit. */
-        cameraRequestResend(resendHdr);
     }
+    firstEmpty = packetIdx;
+
+    resendHdr.blockIdRes = blockID;
+    resendHdr.firstPktId = firstEmpty;
+    resendHdr.lastPktId = expectedNoOfPackets;
+    resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
+
+    qDebug() << "Executing resend routine for block ID = " << resendHdr.blockIdRes
+             << " from packet " << resendHdr.firstPktId << " to " << resendHdr.lastPktId;
+    qDebug() << "Unserviced resend requestes in Queue = " << mPktResendBlockIDQueue.count();
+
+    /* Transmit a request to resubmit. */
+    cameraRequestResend(resendHdr);
+
 }
 
 quint32 cameraApi::cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value) {
@@ -231,9 +210,7 @@ quint32 cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList
                     }
                 } else if (tempNode.toElement().nodeName() == "StructEntry") {
 
-                    tempNode = tempNode.parentNode();
-                    tempNode.toElement().nodeValue();
-                    qDebug() << "Struct entry found.";
+                    /* Not supported yet. */
                 }
 
                 if (error == CAMERA_API_STATUS_SUCCESS) {
@@ -342,6 +319,11 @@ quint32 cameraApi::cameraWriteCameraAttribute(const QList<QString>& attributeLis
                             /* Fetch the register element. */
                             error = cameraXmlFetchAttrElement(tempStr, tempNode);
                         }
+                    }
+
+                    else if (tempNode.toElement().nodeName() == "StructEntry") {
+
+                        /* Not supported yet. */
                     }
 
                     if (error == CAMERA_API_STATUS_SUCCESS) {
