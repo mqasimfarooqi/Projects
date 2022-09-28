@@ -16,7 +16,7 @@
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 #define CAMERA_MAX_FRAME_BUFFER_SIZE (10)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (5000)
+#define CAMERA_GVSP_PAYLOAD_SIZE (8000)
 
 #define CAMERA_API_STATUS_SUCCESS (0)
 #define CAMERA_API_STATUS_FAILED (1)
@@ -27,7 +27,11 @@ const QList<QString> lookupTags = {
     "Integer",
     "StringReg",
     "MaskedIntReg",
-    "StructReg"
+    "StructReg",
+    "Enumeration",
+    "IntConverter",
+    "StructEntry",
+    "Command"
 };
 
 class cameraApi : public QObject

@@ -31,7 +31,6 @@ void PacketHandler::slotServicePendingPackets() {
     /* Receive the datagram. */
     mMutexPtr->lock();
     if (!mQueueDatgrams->isEmpty()) {
-        //qDebug() << "Packet serviced by " << QThread::currentThread();
         gvspPkt = mQueueDatgrams->dequeue();
     }
     mMutexPtr->unlock();
@@ -51,7 +50,6 @@ void PacketHandler::slotServicePendingPackets() {
                     leastBlockID = keys.at(counter);
                 }
             }
-            //qDebug() << "Removing hashtable entry with block ID = " << leastBlockID;
             mStreamHashTablePtr->remove(leastBlockID);
         }
         mMutexPtr->unlock();
@@ -122,11 +120,9 @@ void PacketHandler::slotServicePendingPackets() {
                                     expectedNoOfPackets++ : expectedNoOfPackets;
 
                         if (mStreamHashTablePtr->find(streamHdr.blockId$flag)->count() < (int)expectedNoOfPackets) {
-                            //qDebug() << "Complete packet not found";
                             mQueueFrameResendBlockID->enqueue(streamHdr.blockId$flag);
                             emit signalRequestResend();
                         } else {
-                            qDebug() << "mQueueDatgrams->count() = " << mQueueDatgrams->count();
                             qDebug() << "Packet received completely with block ID = " << streamHdr.blockId$flag;
                             mStreamHashTablePtr->remove(streamHdr.blockId$flag);
                         }
