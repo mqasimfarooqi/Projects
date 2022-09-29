@@ -6,14 +6,6 @@
 #include <QtNetwork>
 #include <QMutex>
 
-/* General camera properties structure. */
-typedef struct {
-    quint8 statusFlags;
-    quint16 streamPktSize;
-    quint16 streamChannelIdx;
-
-} CameraProperties;
-
 class PacketHandler : public QObject
 {
     Q_OBJECT

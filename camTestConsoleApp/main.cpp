@@ -14,10 +14,8 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
     cameraApi *cheetah;
     QUdpSocket m_sock;
-    QHostAddress hostAddr, destAddr;
-    quint16 hostPort;
+    QHostAddress hostAddr;
     QList<QString> featureList;
-    strGvcpAckDiscoveryHdr discHdr;
     QDomDocument XmlDoc;
     QList<strGvcpCmdWriteRegHdr> writeUnit;
     bool error = false;
@@ -25,6 +23,7 @@ int main(int argc, char *argv[])
     QList<QByteArray> camAttributes;
     QList<quint32> regValues;
     QList<strGvcpCmdReadRegHdr> regAddresses;
+    QList<strGvcpAckDiscoveryHdr> discHeaders;
     strGvcpCmdWriteRegHdr writeReg;
     strGvcpCmdReadRegHdr readReg;
 
@@ -93,14 +92,12 @@ int main(int argc, char *argv[])
         qInfo() << "Unable to initialize camera.";
     }
 
-    hostAddr.setAddress("192.168.10.3");
-    destAddr.setAddress("192.168.10.8");
-    hostPort = 55967;
-    cheetah = new cameraApi(hostAddr, destAddr, hostPort);
+    hostAddr = QHostAddress("192.168.10.3");
+    cheetah = new cameraApi(hostAddr);
 
-    destAddr.setAddress("255.255.255.255");
-    cheetah->cameraInitializeDevice();
-    cheetah->cameraStartStream(47345);
+    cheetah->cameraDiscoverDevice(QHostAddress("255.255.255.255"), discHeaders);
+    cheetah->cameraInitializeDevice(QHostAddress("192.168.10.8"));
+    cheetah->cameraStartStream();
     a.exec();
 
     while(!error) {
@@ -109,26 +106,29 @@ int main(int argc, char *argv[])
 
         switch (option) {
         case '0':
-            error = cheetah->cameraDiscoverDevice(destAddr, discHdr);
+            discHeaders.clear();
+            error = cheetah->cameraDiscoverDevice(QHostAddress("255.255.255.255"), discHeaders);
             if (error) {
                 qInfo() << "Command failed";
             } else {
-                qInfo() << "currentIp = "  << discHdr.currentIp;
-                qInfo() << "defaultGateway = "  << discHdr.defaultGateway;
-                qInfo() << "deviceMacAddrHigh = "  << discHdr.deviceMacAddrHigh;
-                qInfo() << "deviceMacAddrLow = "  << discHdr.deviceMacAddrLow;
-                qInfo() << "deviceMode = "  << discHdr.deviceMode;
-                qInfo() << "specVersionMajor = "  << discHdr.specVersionMajor;
-                qInfo() << "specVersionMinor = "  << discHdr.specVersionMinor;
-                qInfo() << "ipConfigCurrent = "  << discHdr.ipConfigCurrent;
-                qInfo() << "ipConfigOptions = "  << discHdr.ipConfigOptions;
-                qInfo() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
-                qInfo() << "serialNumber = "  << QByteArray::fromRawData((char *)&discHdr.serialNumber, 16);
-                qInfo() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHdr.userDefinedName, 16);
-                qInfo() << "deviceVersion = "  << QByteArray::fromRawData((char *)&discHdr.deviceVersion, 32);
-                qInfo() << "manufacturerName = "  << QByteArray::fromRawData((char *)&discHdr.manufacturerName, 32);
-                qInfo() << "modelName = "  << QByteArray::fromRawData((char *)&discHdr.modelName, 32);
-                qInfo() << "manufacturerSpecificInfo" << QByteArray::fromRawData((char *)&discHdr.manufacturerSpecificInfo, 48);
+                for (int counter = 0; counter < discHeaders.count(); counter++) {
+                    qInfo() << "currentIp = "  << discHeaders.at(counter).currentIp;
+                    qInfo() << "defaultGateway = "  << discHeaders.at(counter).defaultGateway;
+                    qInfo() << "deviceMacAddrHigh = "  << discHeaders.at(counter).deviceMacAddrHigh;
+                    qInfo() << "deviceMacAddrLow = "  << discHeaders.at(counter).deviceMacAddrLow;
+                    qInfo() << "deviceMode = "  << discHeaders.at(counter).deviceMode;
+                    qInfo() << "specVersionMajor = "  << discHeaders.at(counter).specVersionMajor;
+                    qInfo() << "specVersionMinor = "  << discHeaders.at(counter).specVersionMinor;
+                    qInfo() << "ipConfigCurrent = "  << discHeaders.at(counter).ipConfigCurrent;
+                    qInfo() << "ipConfigOptions = "  << discHeaders.at(counter).ipConfigOptions;
+                    qInfo() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHeaders.at(counter).userDefinedName, 16);
+                    qInfo() << "serialNumber = "  << QByteArray::fromRawData((char *)&discHeaders.at(counter).serialNumber, 16);
+                    qInfo() << "userDefinedName = "  << QByteArray::fromRawData((char *)&discHeaders.at(counter).userDefinedName, 16);
+                    qInfo() << "deviceVersion = "  << QByteArray::fromRawData((char *)&discHeaders.at(counter).deviceVersion, 32);
+                    qInfo() << "manufacturerName = "  << QByteArray::fromRawData((char *)&discHeaders.at(counter).manufacturerName, 32);
+                    qInfo() << "modelName = "  << QByteArray::fromRawData((char *)&discHeaders.at(counter).modelName, 32);
+                    qInfo() << "manufacturerSpecificInfo" << QByteArray::fromRawData((char *)&discHeaders.at(counter).manufacturerSpecificInfo, 48);
+                }
             }
             break;
 
@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
             break;
 
         case '4':
-            error = cheetah->cameraStartStream(59965);
+            error = cheetah->cameraStartStream();
             a.exec();
 
             break;
