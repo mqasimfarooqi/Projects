@@ -22,11 +22,14 @@ void PacketHandler::slotServicePendingPackets() {
     strGvspImageDataLeaderHdr imgLeaderHdr;
     strGvspImageDataTrailerHdr imgTrailerHdr;
     QByteArray dataArr;
+    QByteArray imgRawBytes;
     quint8 *dataPtr;
     quint32 expectedNoOfPackets;
+    quint32 packetCounter;
     quint16 leastBlockID;
     QList<quint16> keys;
     QHash<quint32, QByteArray> frameHT;
+    QHash<quint32, QByteArray> tempFrame;
 
     /* Receive the datagram. */
     mMutexPtr->lock();
@@ -59,7 +62,7 @@ void PacketHandler::slotServicePendingPackets() {
         if (!error) {
             dataPtr += sizeof(strGvspDataBlockHdr);
         } else {
-            qDebug() << "Invalid generic data header received.";
+            qDebug() << __FILE__ << __LINE__ << "Invalid generic data header received.";
         }
 
         /* Parse extended generic header if it is preasent. */
@@ -69,7 +72,7 @@ void PacketHandler::slotServicePendingPackets() {
             if (!error) {
                 dataPtr += sizeof(strGvspDataBlockExtensionHdr);
             } else {
-                qDebug() << "Invalid generic data extension header received.";
+                qDebug() << __FILE__ << __LINE__ << "Invalid generic data extension header received.";
             }
         }
 
@@ -84,10 +87,13 @@ void PacketHandler::slotServicePendingPackets() {
             case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
                 error = gvspPopulateImageLeaderHdrFromBigEndian(dataPtr, imgLeaderHdr);
                 if (!error) {
-                    expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                            (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+                    expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
+                                            (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
                     ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                                 expectedNoOfPackets++ : expectedNoOfPackets;
+
+                    /* Adding 2 for header and trailer. */
+                    expectedNoOfPackets += 2;
 
                     frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
                                    QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
@@ -96,7 +102,7 @@ void PacketHandler::slotServicePendingPackets() {
                     mStreamHashTablePtr->insert(streamHdr.blockId$flag, frameHT);
                     mMutexPtr->unlock();
                 } else {
-                    qDebug() << "Invalid image leader header received.";
+                    qDebug() << __FILE__ << __LINE__ << "Invalid image leader header received.";
                 }
                 break;
             }
@@ -114,22 +120,37 @@ void PacketHandler::slotServicePendingPackets() {
                         mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
 
                         memcpy(&imgLeaderHdr, mStreamHashTablePtr->find(streamHdr.blockId$flag)->value(0).data(), sizeof(strGvspImageDataLeaderHdr));
-                        expectedNoOfPackets = (((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                                (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) + 1);
+                        expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
+                                                (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
                         ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                                     expectedNoOfPackets++ : expectedNoOfPackets;
 
-                        if (mStreamHashTablePtr->find(streamHdr.blockId$flag)->count() < (int)expectedNoOfPackets) {
+                        /* Adding 2 for header and trailer. */
+                        expectedNoOfPackets += 2;
+
+                        if (((quint32)mStreamHashTablePtr->find(streamHdr.blockId$flag)->count()) < (expectedNoOfPackets - 1)) {
                             mQueueFrameResendBlockID->enqueue(streamHdr.blockId$flag);
                             emit signalRequestResend();
                         } else {
-                            qDebug() << "Packet received completely with block ID = " << streamHdr.blockId$flag;
+                            qDebug() << __FILE__ << __LINE__ << "Packet received completely with block ID = " << streamHdr.blockId$flag;
+                            qDebug() << __FILE__ << __LINE__ << "Unserviced packets left in queue = " << mQueueDatgrams->count();
+
+                            tempFrame = mStreamHashTablePtr->find(streamHdr.blockId$flag).value();
+                            for (packetCounter = 1;
+                                 packetCounter < (quint32)tempFrame.count() - 1;
+                                 packetCounter++) {
+
+                                imgRawBytes.append(tempFrame[packetCounter]);
+                            }
+                            qDebug() << __FILE__ << __LINE__ << "Size of image = " << imgRawBytes.count();
+                            qDebug() << __FILE__ << __LINE__ << "Number of packets in this frame = " << tempFrame.count();
+
                             mStreamHashTablePtr->remove(streamHdr.blockId$flag);
                         }
                     }
                     mMutexPtr->unlock();
                 } else {
-                    qDebug() << "Invalid image trailer header received.";
+                    qDebug() << __FILE__ << __LINE__ << "Invalid image trailer header received.";
                 }
                 break;
             }
@@ -138,8 +159,7 @@ void PacketHandler::slotServicePendingPackets() {
             mMutexPtr->lock();
             if (mStreamHashTablePtr->contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
                 mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                                                                          QByteArray((char *)dataPtr + sizeof(strGvspDataBlockHdr),
-                                                                                     (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)));
+                                                                          QByteArray((char *)dataPtr, gvspPkt.data().count() - GVSP_HEADER_SIZE));
             }
             mMutexPtr->unlock();
             break;

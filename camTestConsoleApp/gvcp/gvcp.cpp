@@ -233,7 +233,7 @@ quint32 gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
         gvcpMakeCommandSpecificAckHeader(ackHeader, tempArray);
     } else {
 
-        qDebug() << "Error: Command specific data in an ack cannot be empty";
+        qDebug() << __FILE__ << __LINE__ << "Error: Command specific data in an ack cannot be empty";
         error = true;
     }
 
@@ -259,7 +259,7 @@ quint32 gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray
     /* Check to see if the pointer is not null. */
     if (!udpSock.isValid()) {
         error = true;
-        qDebug() << "Error: Udp socket pointer is invalid.";
+        qDebug() << __FILE__ << __LINE__ << "Error: Udp socket pointer is invalid.";
     }
 
     if (!error) {

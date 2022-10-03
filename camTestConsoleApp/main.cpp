@@ -1,6 +1,8 @@
 #include <QCoreApplication>
 #include "cameraapi.h"
 
+#define QT_NO_DEBUG_OUTPUT
+
 #ifdef GIT_TRACKED
 const QString gitCommitHash = GIT_COMMIT_HASH;
 const QString gitCommitDate = GIT_COMMIT_DATE;
@@ -9,8 +11,7 @@ const QString buildDate = __DATE__;
 const QString buildTime = __TIME__;
 #endif
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
     cameraApi *cheetah;
     QUdpSocket m_sock;
@@ -28,14 +29,14 @@ int main(int argc, char *argv[])
     strGvcpCmdReadRegHdr readReg;
 
 #ifdef GIT_TRACKED
-    qDebug() << "Git Commit Hash = " << gitCommitHash;
-    qDebug() << "Git Commit Date = " << gitCommitDate;
-    qDebug() << "Git Branch = " << gitBranch;
-    qDebug() << "Build Date = " << buildDate;
-    qDebug() << "Build Time = " << buildTime;
-    qDebug() << "";
+    qInfo() << "Git Commit Hash = " << gitCommitHash;
+    qInfo() << "Git Commit Date = " << gitCommitDate;
+    qInfo() << "Git Branch = " << gitBranch;
+    qInfo() << "Build Date = " << buildDate;
+    qInfo() << "Build Time = " << buildTime;
+    qInfo() << "";
 #else
-    qDebug() << "This project is not tracked.";
+    qDebug() << __FILE__ << __LINE__ << << "This project is not tracked.";
 #endif
 
     featureList.append("GevCCPReg"); //gigeCCPReg

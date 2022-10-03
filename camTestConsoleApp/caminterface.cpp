@@ -8,19 +8,19 @@ bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& dat
     /* Check to see if the pointer is not null. */
     if (!udpSock.isValid()) {
         error = CAMERA_INTERFACE_STATUS_FAILED;
-        qDebug() << "Error: Udp socket pointer is invalid.";
+        qDebug() << __FILE__ << __LINE__ << "Error: Udp socket pointer is invalid.";
 
     } else if (!(datagram.data().length() > 0)) {
         error = CAMERA_INTERFACE_STATUS_FAILED;
-        qDebug() << "Error: No valid data present in the datagram.";
+        qDebug() << __FILE__ << __LINE__ << "Error: No valid data present in the datagram.";
 
     } else if (datagram.destinationAddress().isNull()) {
         error = CAMERA_INTERFACE_STATUS_FAILED;
-        qDebug() << "Error: Incorrect destination address for the datagram.";
+        qDebug() << __FILE__ << __LINE__ << "Error: Incorrect destination address for the datagram.";
 
     } else if (!(datagram.destinationPort() > 0)) {
         error = CAMERA_INTERFACE_STATUS_FAILED;
-        qDebug() << "Error: Incorrect destination port for the datagram.";
+        qDebug() << __FILE__ << __LINE__ << "Error: Incorrect destination port for the datagram.";
     }
 
     if (error == CAMERA_INTERFACE_STATUS_SUCCESS) {
@@ -28,7 +28,7 @@ bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& dat
         /* Write datagram to the udp socket. */
         if(!(udpSock.writeDatagram(datagram) > 0)) {
 
-            qDebug() << "Error: Error sending datagram.";
+            qDebug() << __FILE__ << __LINE__ << "Error: Error sending datagram.";
             error = CAMERA_INTERFACE_STATUS_FAILED;
         }
     }
@@ -44,7 +44,7 @@ bool caminterface::camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& 
     if (!udpSock.isValid() || !(udpSock.hasPendingDatagrams())) {
 
         error = CAMERA_INTERFACE_STATUS_FAILED;
-        qDebug() << "Error: Cannot receive UDP packet either due to "
+        qDebug() << __FILE__ << __LINE__ << "Error: Cannot receive UDP packet either due to "
                     "invalid pointer to udp socket or there are no pending datagrams.";
 
     } else {
