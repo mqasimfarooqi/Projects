@@ -12,6 +12,10 @@ unix {
     LIBS += -L$$PWD/quazip -lz
 }
 
+LIBS += `pkg-config --libs opencv4`
+
+#DEFINES += QT_NO_INFO_OUTPUT
+
 system(git):DEFINES += HAS_GIT
 
 #ifdef HAS_GIT

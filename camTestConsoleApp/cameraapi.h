@@ -10,14 +10,16 @@
 #include "gvsp/gvsp.h"
 #include "packethandler.h"
 
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 #define BIT(x) (1 << x)
 #define CAMERA_GVCP_BIND_PORT (0)
 #define CAMERA_GVSP_BIND_PORT (0)
 #define CAMERA_MAX_WORKER_THREAD_COUNT (2)
 #define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
-#define CAMERA_MAX_FRAME_BUFFER_SIZE (2)
+#define CAMERA_MAX_FRAME_BUFFER_SIZE (5)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (8500)
+#define CAMERA_GVSP_PAYLOAD_SIZE (8950)
 
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 
@@ -94,7 +96,8 @@ private:
     QUdpSocket mGvspSock;
     QDomDocument mCamXmlFile;
     CameraProperties mCamProps;
-    QMutex mMutex;
+    QReadWriteLock mHashLocker;
+    QReadWriteLock mQueueLocker;
     QThread mStreamingThread;
     QList<QThread> mListStreamWorkingThread;
     QQueue<QNetworkDatagram> mStreamReceiveQueue;

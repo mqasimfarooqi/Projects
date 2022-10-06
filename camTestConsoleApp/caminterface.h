@@ -7,6 +7,8 @@
 #include <QtNetwork>
 #include <QDataStream>
 
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 #define CAMERA_INTERFACE_STATUS_SUCCESS (0)
 #define CAMERA_INTERFACE_STATUS_FAILED (1)
 

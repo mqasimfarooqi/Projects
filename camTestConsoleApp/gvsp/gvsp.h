@@ -6,6 +6,8 @@
 #include "gvsp/gvspHeaders.h"
 #include "gigev.h"
 
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+
 #define GVSP_PAYLOAD_IMAGE                  (0x0001)
 #define GVSP_PAYLOAD_RAWDATA                (0x0002)
 #define GVSP_PAYLOAD_FILE                   (0x0003)

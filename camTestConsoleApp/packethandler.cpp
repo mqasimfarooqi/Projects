@@ -1,15 +1,25 @@
 #include "packethandler.h"
 #include "cameraapi.h"
 #include "gvsp/gvsp.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/mat.hpp>
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/imgproc/imgproc.hpp>
+
+using namespace cv;
 
 PacketHandler::PacketHandler(QHash<quint16, QHash<quint32, QByteArray>> *streamHT, quint16 streamPktSize,
-                             QMutex *mutex, QQueue<quint16> *blockIDQueue, QQueue<QNetworkDatagram> *datagramQueue,
+                             QReadWriteLock *hashLocker, QReadWriteLock *queueLocker, QQueue<quint16> *blockIDQueue,
+                             QQueue<QNetworkDatagram> *datagramQueue,
                              QObject *parent) : QObject{ parent } {
     mStreamHashTablePtr = streamHT;
     mQueueFrameResendBlockID = blockIDQueue;
     mPktSize = streamPktSize;
     mQueueDatgrams = datagramQueue;
-    mMutexPtr = mutex;
+    mHashLockerPtr = hashLocker;
+    mQueueLockerPtr = queueLocker;
 }
 
 void PacketHandler::slotServicePendingPackets() {
@@ -26,43 +36,30 @@ void PacketHandler::slotServicePendingPackets() {
     quint8 *dataPtr;
     quint32 expectedNoOfPackets;
     quint32 packetCounter;
+    quint32 tempValue;
+    bool tempBool;
     quint16 leastBlockID;
     QList<quint16> keys;
     QHash<quint32, QByteArray> frameHT;
     QHash<quint32, QByteArray> tempFrame;
 
     /* Receive the datagram. */
-    mMutexPtr->lock();
+    mQueueLockerPtr->lockForWrite();
     if (!mQueueDatgrams->isEmpty()) {
         gvspPkt = mQueueDatgrams->dequeue();
     }
-    mMutexPtr->unlock();
+    mQueueLockerPtr->unlock();
 
     if (!gvspPkt.isNull()) {
-
         dataArr = gvspPkt.data();
         dataPtr = (quint8 *)dataArr.data();
-
-        /* Remove the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
-        mMutexPtr->lock();
-        if (mStreamHashTablePtr->count() > CAMERA_MAX_FRAME_BUFFER_SIZE) {
-            keys = mStreamHashTablePtr->keys();
-            leastBlockID = keys.constFirst();
-            for (int counter = 0; counter < keys.size(); counter++) {
-                if (keys.at(counter) < leastBlockID) {
-                    leastBlockID = keys.at(counter);
-                }
-            }
-            mStreamHashTablePtr->remove(leastBlockID);
-        }
-        mMutexPtr->unlock();
 
         /* Populate generic stream header. */
         error = gvspPopulateGenericDataHdrFromBigEndian(dataPtr, streamHdr);
         if (!error) {
             dataPtr += sizeof(strGvspDataBlockHdr);
         } else {
-            qDebug() << __FILE__ << __LINE__ << "Invalid generic data header received.";
+            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid generic data header received.";
         }
 
         /* Parse extended generic header if it is preasent. */
@@ -72,7 +69,7 @@ void PacketHandler::slotServicePendingPackets() {
             if (!error) {
                 dataPtr += sizeof(strGvspDataBlockExtensionHdr);
             } else {
-                qDebug() << __FILE__ << __LINE__ << "Invalid generic data extension header received.";
+                qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid generic data extension header received.";
             }
         }
 
@@ -98,11 +95,12 @@ void PacketHandler::slotServicePendingPackets() {
                     frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
                                    QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
                     frameHT.reserve(expectedNoOfPackets);
-                    mMutexPtr->lock();
+
+                    mHashLockerPtr->lockForWrite();
                     mStreamHashTablePtr->insert(streamHdr.blockId$flag, frameHT);
-                    mMutexPtr->unlock();
+                    mHashLockerPtr->unlock();
                 } else {
-                    qDebug() << __FILE__ << __LINE__ << "Invalid image leader header received.";
+                    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid image leader header received.";
                 }
                 break;
             }
@@ -115,9 +113,14 @@ void PacketHandler::slotServicePendingPackets() {
             case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
                 error = gvspPopulateImageTrailerHdrFromBigEndian(dataPtr, imgTrailerHdr);
                 if (!error) {
-                    mMutexPtr->lock();
-                    if (mStreamHashTablePtr->contains(streamHdr.blockId$flag)) {
+                    mHashLockerPtr->lockForRead();
+                    tempBool = mStreamHashTablePtr->contains(streamHdr.blockId$flag);
+                    mHashLockerPtr->unlock();
+
+                    if (tempBool) {
+                        mHashLockerPtr->lockForWrite();
                         mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
+                        mHashLockerPtr->unlock();
 
                         memcpy(&imgLeaderHdr, mStreamHashTablePtr->find(streamHdr.blockId$flag)->value(0).data(), sizeof(strGvspImageDataLeaderHdr));
                         expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
@@ -128,12 +131,32 @@ void PacketHandler::slotServicePendingPackets() {
                         /* Adding 2 for header and trailer. */
                         expectedNoOfPackets += 2;
 
-                        if (((quint32)mStreamHashTablePtr->find(streamHdr.blockId$flag)->count()) < (expectedNoOfPackets - 1)) {
+                        {
+                            /* NOTE: The logic in this block due to a corner case
+                             * i.e (If another thread has a data packet for the same block ID).
+                             * When we again try to acquire the lock for read, it will not allow
+                             * until other threads waiting for write do not complete their transaction.
+                             * But somehow this still does not work. Though still causes no packet loss,
+                             * but still wastes the bandwidth. */
+                            mHashLockerPtr->lockForRead();
+                            tempValue = ((quint32)mStreamHashTablePtr->find(streamHdr.blockId$flag)->count());
+                            mHashLockerPtr->unlock();
+                            if (tempValue < expectedNoOfPackets) {
+                                mHashLockerPtr->lockForRead();
+                                tempValue = ((quint32)mStreamHashTablePtr->find(streamHdr.blockId$flag)->count());
+                                mHashLockerPtr->unlock();
+                            }
+                        }
+
+                        if (tempValue < expectedNoOfPackets) {
+
+                            mQueueLockerPtr->lockForWrite();
                             mQueueFrameResendBlockID->enqueue(streamHdr.blockId$flag);
+                            mQueueLockerPtr->unlock();
                             emit signalRequestResend();
                         } else {
-                            qDebug() << __FILE__ << __LINE__ << "Packet received completely with block ID = " << streamHdr.blockId$flag;
-                            qDebug() << __FILE__ << __LINE__ << "Unserviced packets left in queue = " << mQueueDatgrams->count();
+                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Packet received completely with block ID = " << streamHdr.blockId$flag;
+                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unserviced packets left in queue = " << mQueueDatgrams->count();
 
                             tempFrame = mStreamHashTablePtr->find(streamHdr.blockId$flag).value();
                             for (packetCounter = 1;
@@ -142,27 +165,59 @@ void PacketHandler::slotServicePendingPackets() {
 
                                 imgRawBytes.append(tempFrame[packetCounter]);
                             }
-                            qDebug() << __FILE__ << __LINE__ << "Size of image = " << imgRawBytes.count();
-                            qDebug() << __FILE__ << __LINE__ << "Number of packets in this frame = " << tempFrame.count();
 
+                            /* Implement OpenCV code here. */
+//                            Mat image;
+//                            Mat data(imgLeaderHdr.sizeX, imgLeaderHdr.sizeY, CV_8UC1, imgRawBytes.data());
+//                            cvtColor(data, image, CV_BayerRG2BGR);
+//                            imshow("image", image);
+//                            waitKey(0);
+
+                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Size of image = " << imgRawBytes.count();
+                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Number of packets in this frame = " << tempFrame.count();
+
+                            mHashLockerPtr->lockForWrite();
                             mStreamHashTablePtr->remove(streamHdr.blockId$flag);
+                            mHashLockerPtr->unlock();
                         }
                     }
-                    mMutexPtr->unlock();
                 } else {
-                    qDebug() << __FILE__ << __LINE__ << "Invalid image trailer header received.";
+                    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid image trailer header received.";
                 }
                 break;
             }
             break;
         case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
-            mMutexPtr->lock();
+            mHashLockerPtr->lockForWrite();
             if (mStreamHashTablePtr->contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
                 mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
                                                                           QByteArray((char *)dataPtr, gvspPkt.data().count() - GVSP_HEADER_SIZE));
             }
-            mMutexPtr->unlock();
+            mHashLockerPtr->unlock();
             break;
+        }
+
+        /* Following block removes the first entry if max enteries become greater than CAMERA_FRAME_BUFFER_MAXSIZE. */
+        {
+            mHashLockerPtr->lockForRead();
+            tempBool = mStreamHashTablePtr->count() > CAMERA_MAX_FRAME_BUFFER_SIZE;
+            if (tempBool == true) {
+                keys = mStreamHashTablePtr->keys();
+            }
+            mHashLockerPtr->unlock();
+
+            if (tempBool == true) {
+                leastBlockID = keys.constFirst();
+                for (int counter = 0; counter < keys.size(); counter++) {
+                    if (keys.at(counter) < leastBlockID) {
+                        leastBlockID = keys.at(counter);
+                    }
+                }
+
+                mHashLockerPtr->lockForWrite();
+                mStreamHashTablePtr->remove(leastBlockID);
+                mHashLockerPtr->unlock();
+            }
         }
     }
 }
