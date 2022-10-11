@@ -1,8 +1,6 @@
 #include <QCoreApplication>
 #include "cameraapi.h"
 
-#define QT_NO_DEBUG_OUTPUT
-
 #ifdef GIT_TRACKED
 const QString gitCommitHash = GIT_COMMIT_HASH;
 const QString gitCommitDate = GIT_COMMIT_DATE;
@@ -36,7 +34,7 @@ int main(int argc, char *argv[]) {
     qInfo() << "Build Time = " << buildTime;
     qInfo() << "";
 #else
-    qDebug() << __FILE__ << __LINE__ << << "This project is not tracked.";
+    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << << "This project is not tracked.";
 #endif
 
     featureList.append("GevCCPReg"); //gigeCCPReg
@@ -97,8 +95,17 @@ int main(int argc, char *argv[]) {
     cheetah = new cameraApi(hostAddr);
 
     cheetah->cameraDiscoverDevice(QHostAddress("255.255.255.255"), discHeaders);
-    cheetah->cameraInitializeDevice(QHostAddress("192.168.10.8"));
-    cheetah->cameraStartStream();
+    if (discHeaders.count() > 0) {
+        for (int iterator = 0; iterator < discHeaders.count(); iterator++) {
+            if (QString::fromLocal8Bit((char *)discHeaders.at(iterator).modelName, 32).contains("POE-C2410C")) {
+                cheetah->cameraInitializeDevice(QHostAddress(discHeaders.at(iterator).currentIp));
+                cheetah->cameraStartStream();
+                //cheetah->cameraStopStream();
+            }
+        }
+    } else {
+        qDebug() << "No GigeV devices found.";
+    }
     a.exec();
 
     while(!error) {

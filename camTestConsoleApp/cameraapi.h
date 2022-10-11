@@ -15,11 +15,11 @@
 #define BIT(x) (1 << x)
 #define CAMERA_GVCP_BIND_PORT (0)
 #define CAMERA_GVSP_BIND_PORT (0)
-#define CAMERA_MAX_WORKER_THREAD_COUNT (2)
+#define CAMERA_MAX_WORKER_THREAD_COUNT (1)
 #define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
-#define CAMERA_MAX_FRAME_BUFFER_SIZE (5)
+#define CAMERA_MAX_FRAME_BUFFER_SIZE (3)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (8950)
+#define CAMERA_GVSP_PAYLOAD_SIZE (5000)
 
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 
@@ -56,7 +56,6 @@ public:
     explicit cameraApi(const QHostAddress hostIPv4Addr, QObject *parent = nullptr);
 
 signals:
-    void signalResendRequested();
     void signalDatagramEnqueued();
 
 public slots:
@@ -73,6 +72,7 @@ public:
     quint32 cameraDiscoverDevice(const QHostAddress& destAddr, QList<strGvcpAckDiscoveryHdr>& discAckHdr);
     quint32 cameraInitializeDevice(const QHostAddress& camIP);
     quint32 cameraStartStream();
+    quint32 cameraStopStream();
 
     /* Getters and setters */
     quint8 camStatusFlags() const;
@@ -99,7 +99,8 @@ private:
     QReadWriteLock mHashLocker;
     QReadWriteLock mQueueLocker;
     QThread mStreamingThread;
-    QList<QThread> mListStreamWorkingThread;
+    QList<QThread *> mListStreamWorkingThread;
+    QList<PacketHandler *> mListPacketHandlers;
     QQueue<QNetworkDatagram> mStreamReceiveQueue;
     QQueue<quint16> mPktResendBlockIDQueue;
     QHash<quint16, QHash<quint32, QByteArray>> mStreamHT;

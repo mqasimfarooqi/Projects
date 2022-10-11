@@ -141,11 +141,14 @@ void PacketHandler::slotServicePendingPackets() {
                             mHashLockerPtr->lockForRead();
                             tempValue = ((quint32)mStreamHashTablePtr->find(streamHdr.blockId$flag)->count());
                             mHashLockerPtr->unlock();
+#if 0
                             if (tempValue < expectedNoOfPackets) {
+                                QThread::currentThread()->msleep(1); /* NOTE: VERY POOR FIX, NEED TO CHANGE IT. */
                                 mHashLockerPtr->lockForRead();
                                 tempValue = ((quint32)mStreamHashTablePtr->find(streamHdr.blockId$flag)->count());
                                 mHashLockerPtr->unlock();
                             }
+#endif
                         }
 
                         if (tempValue < expectedNoOfPackets) {
@@ -158,7 +161,10 @@ void PacketHandler::slotServicePendingPackets() {
                             qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Packet received completely with block ID = " << streamHdr.blockId$flag;
                             qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unserviced packets left in queue = " << mQueueDatgrams->count();
 
+                            mHashLockerPtr->lockForRead();
                             tempFrame = mStreamHashTablePtr->find(streamHdr.blockId$flag).value();
+                            mHashLockerPtr->unlock();
+
                             for (packetCounter = 1;
                                  packetCounter < (quint32)tempFrame.count() - 1;
                                  packetCounter++) {
@@ -166,12 +172,18 @@ void PacketHandler::slotServicePendingPackets() {
                                 imgRawBytes.append(tempFrame[packetCounter]);
                             }
 
-                            /* Implement OpenCV code here. */
-//                            Mat image;
-//                            Mat data(imgLeaderHdr.sizeX, imgLeaderHdr.sizeY, CV_8UC1, imgRawBytes.data());
-//                            cvtColor(data, image, CV_BayerRG2BGR);
-//                            imshow("image", image);
-//                            waitKey(0);
+                            /* TEST */
+                            Mat image;
+                            Mat data(imgLeaderHdr.sizeY, imgLeaderHdr.sizeX, CV_8UC1, imgRawBytes.data());
+                            cvtColor(data, image, CV_BayerBG2BGR);
+
+//                            if (!image.empty()) {
+//                                imshow("image", image);
+//                                waitKey(0);
+//                            } else {
+//                                qDebug() << "Image data is Null";
+//                            }
+                            /* TEST */
 
                             qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Size of image = " << imgRawBytes.count();
                             qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Number of packets in this frame = " << tempFrame.count();
@@ -221,3 +233,4 @@ void PacketHandler::slotServicePendingPackets() {
         }
     }
 }
+

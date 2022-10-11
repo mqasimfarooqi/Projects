@@ -12,7 +12,6 @@ cameraApi::cameraApi(const QHostAddress hostIPv4Addr, QObject *parent)
 }
 
 void cameraApi::slotGvspReadyRead() {
-
     while (mGvspSock.hasPendingDatagrams()) {
         mQueueLocker.lockForWrite();
         mStreamReceiveQueue.enqueue(mGvspSock.receiveDatagram());
@@ -781,8 +780,11 @@ quint32 cameraApi::cameraStartStream() {
 
             for (quint8 counter = 0; counter < CAMERA_MAX_WORKER_THREAD_COUNT; counter++) {
                 streamWorker = new QThread();
+                mListStreamWorkingThread.append(streamWorker);
+
                 streamHandler = new PacketHandler(&mStreamHT, mCamProps.streamPktSize, &mHashLocker, &mQueueLocker,
                                                   &mPktResendBlockIDQueue, &mStreamReceiveQueue);
+                mListPacketHandlers.append(streamHandler);
 
                 streamWorker->setObjectName("Stream Worker " + QString::number(counter));
                 streamHandler->moveToThread(streamWorker);
@@ -808,6 +810,35 @@ quint32 cameraApi::cameraStartStream() {
         val = qToBigEndian(0x1);
         error = cameraWriteCameraAttribute(QList<QString>() << "AcquisitionStart",
                                            QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+    }
+
+    return error;
+}
+
+quint32 cameraApi::cameraStopStream() {
+    quint32 error;
+    QThread *streamWorker;
+    PacketHandler *streamHandler;
+    quint32 val;
+
+    val = qToBigEndian(0x1);
+    error = cameraWriteCameraAttribute(QList<QString>() << "AcquisitionStop",
+                                       QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+
+    for (quint8 counter = 0; counter < mListStreamWorkingThread.count(); counter++) {
+        streamWorker = mListStreamWorkingThread.takeFirst();
+        streamWorker->exit();
+        while(streamWorker->isRunning());
+        delete(streamWorker);
+    }
+
+    for (quint8 counter = 0; counter < mListPacketHandlers.count(); counter++) {
+        streamHandler = mListPacketHandlers.takeFirst();
+        delete(streamHandler);
+    }
+
+    if (mStreamHT.count() > 0) {
+        mStreamHT.clear();
     }
 
     return error;
@@ -867,9 +898,6 @@ quint32 cameraApi::cameraInitializeDevice(const QHostAddress& camIP) {
 
         /* Fire off the timer. */
         mHeartBeatTimer.start();
-
-        /* Make connection to receive packet resend requests. */
-        connect(this, &cameraApi::signalResendRequested, this, &cameraApi::slotRequestResendRoutine, Qt::ConnectionType::QueuedConnection);
     }
 
     if (error == CAMERA_API_STATUS_SUCCESS) {

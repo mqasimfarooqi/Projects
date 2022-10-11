@@ -22,6 +22,9 @@ signals:
 public slots:
     void slotServicePendingPackets();
 
+public:
+    void hashTableCleanup(quint32 entries);
+
 private:
     quint16 mPktSize;
     QReadWriteLock *mHashLockerPtr;

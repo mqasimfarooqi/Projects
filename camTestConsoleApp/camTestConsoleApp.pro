@@ -1,5 +1,3 @@
-QT -= gui
-
 QT += core xml network concurrent
 
 CONFIG += c++17 console
