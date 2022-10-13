@@ -1,5 +1,5 @@
 #include "packethandler.h"
-#include "cameraapi.h"
+#include "cameraapi/cameraapi.h"
 #include "gvsp/gvsp.h"
 
 PacketHandler::PacketHandler(QHash<quint16, QHash<quint32, QByteArray>> *streamHT, quint16 streamPktSize,

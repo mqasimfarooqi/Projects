@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
     QUdpSocket m_sock;
     QHostAddress hostAddr;
     QList<QString> featureList;
-    QDomDocument XmlDoc;
     QList<strGvcpCmdWriteRegHdr> writeUnit;
     bool error = false;
     char option;
@@ -101,6 +100,7 @@ int main(int argc, char *argv[]) {
                 cheetah->cameraInitializeDevice(QHostAddress(discHeaders.at(iterator).currentIp));
                 cheetah->cameraStartStream();
                 //cheetah->cameraStopStream();
+                break;
             }
         }
     } else {

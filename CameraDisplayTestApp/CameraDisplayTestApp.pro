@@ -1,11 +1,13 @@
-QT += core xml network opengl
+QT       += core gui xml network opengl
 
-CONFIG += c++17 console
-CONFIG -= app_bundle
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+
+CONFIG += c++17
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
+
 unix {
     LIBS += -L$$PWD/quazip -lz
 }
@@ -30,35 +32,34 @@ DEFINES += "GIT_BRANCH=\"\\\"$${GIT_BRANCH}\\\"\"" \
 #endif
 
 SOURCES += \
-        cameraapi.cpp \
-        caminterface.cpp \
-        gvcp/gvcp.cpp \
-        gvsp/gvsp.cpp \
-        main.cpp \
-        packethandler.cpp \
-        quazip/JlCompress.cpp \
-        quazip/qioapi.cpp \
-        quazip/quaadler32.cpp \
-        quazip/quachecksum32.cpp \
-        quazip/quacrc32.cpp \
-        quazip/quagzipfile.cpp \
-        quazip/quaziodevice.cpp \
-        quazip/quazip.cpp \
-        quazip/quazipdir.cpp \
-        quazip/quazipfile.cpp \
-        quazip/quazipfileinfo.cpp \
-        quazip/quazipnewinfo.cpp \
-        quazip/unzip.c \
-        quazip/zip.c
-
-# Default rules for deployment.
-qnx: target.path = /tmp/$${TARGET}/bin
-else: unix:!android: target.path = /opt/$${TARGET}/bin
-!isEmpty(target.path): INSTALLS += target
+    cameraapi/cameraapi.cpp \
+    cameraglwidget.cpp \
+    camerainterface/caminterface.cpp \
+    gvcp/gvcp.cpp \
+    gvsp/gvsp.cpp \
+    main.cpp \
+    cameradisplay.cpp \
+    packethandler/packethandler.cpp \
+    quazip/JlCompress.cpp \
+    quazip/qioapi.cpp \
+    quazip/quaadler32.cpp \
+    quazip/quachecksum32.cpp \
+    quazip/quacrc32.cpp \
+    quazip/quagzipfile.cpp \
+    quazip/quaziodevice.cpp \
+    quazip/quazip.cpp \
+    quazip/quazipdir.cpp \
+    quazip/quazipfile.cpp \
+    quazip/quazipfileinfo.cpp \
+    quazip/quazipnewinfo.cpp \
+    quazip/unzip.c \
+    quazip/zip.c
 
 HEADERS += \
-    cameraapi.h \
-    caminterface.h \
+    cameraapi/cameraapi.h \
+    cameradisplay.h \
+    cameraglwidget.h \
+    camerainterface/caminterface.h \
     gigev.h \
     gvcp/gvcp.h \
     gvcp/gvcpAckHeaders.h \
@@ -66,7 +67,7 @@ HEADERS += \
     gvcp/gvcpHeaders.h \
     gvsp/gvsp.h \
     gvsp/gvspHeaders.h \
-    packethandler.h \
+    packethandler/packethandler.h \
     quazip/JlCompress.h \
     quazip/ioapi.h \
     quazip/minizip_crypt.h \
@@ -85,4 +86,10 @@ HEADERS += \
     quazip/unzip.h \
     quazip/zip.h
 
-DISTFILES +=
+FORMS += \
+    cameradisplay.ui
+
+# Default rules for deployment.
+qnx: target.path = /tmp/$${TARGET}/bin
+else: unix:!android: target.path = /opt/$${TARGET}/bin
+!isEmpty(target.path): INSTALLS += target

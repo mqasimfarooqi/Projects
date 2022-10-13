@@ -1,15 +1,10 @@
 #include "cameraapi.h"
 #include "gvcp/gvcp.h"
 #include "gvsp/gvsp.h"
-#include "packethandler.h"
+#include "packethandler/packethandler.h"
 #include "quazip/JlCompress.h"
 
 using namespace cv;
-
-//QOpenGLWindow cameraDisplay;
-//QOpenGLContext context;
-//QOpenGLFunctions *openGLFunctions;
-//QSurfaceFormat formate;
 
 cameraApi::cameraApi(const QHostAddress hostIPv4Addr, QObject *parent)
     : QObject{parent}, mHostIP(hostIPv4Addr) {
@@ -812,7 +807,6 @@ quint32 cameraApi::cameraStartStream() {
                 streamWorker = new QThread();
                 mListStreamWorkingThread.append(streamWorker);
 
-                //mImageBuffer = new quint8[mCamProps.imageHeight * mCamProps.imageWidth];
                 streamHandler = new PacketHandler(&mStreamHT, mCamProps.streamPktSize, &mHashLocker, &mQueueLocker,
                                                   &mPktResendBlockIDQueue, &mStreamReceiveQueue, &mImageBuffer);
                 mListPacketHandlers.append(streamHandler);
@@ -939,20 +933,6 @@ quint32 cameraApi::cameraInitializeDevice(const QHostAddress& camIP) {
 
         mCamProps.statusFlags &= ~CAMERA_STATUS_FLAGS_INITIALIZED;
     }
-
-    /* TEST */
-//    cameraDisplay.setSurfaceType(QWindow::OpenGLSurface);
-//    formate.setProfile(QSurfaceFormat::CompatibilityProfile);
-//    formate.setVersion(1,2);
-//    cameraDisplay.setFormat(formate);
-//    context.setFormat(formate);
-//    context.create();
-//    context.makeCurrent(&cameraDisplay);
-
-//    openGLFunctions = context.functions();
-
-//    cameraDisplay.show();
-    /* TEST */
 
     return error;
 }

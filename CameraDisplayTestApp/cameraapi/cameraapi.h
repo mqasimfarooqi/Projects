@@ -8,18 +8,13 @@
 #include <QTimer>
 #include "gvcp/gvcpHeaders.h"
 #include "gvsp/gvsp.h"
-#include "packethandler.h"
+#include "packethandler/packethandler.h"
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
 #include <opencv2/core/mat.hpp>
 #include <opencv2/imgproc/types_c.h>
 #include <opencv2/imgproc/imgproc.hpp>
-#include <QOpenGLWindow>
-#include <GL/glu.h>
-#include <QSurfaceFormat>
-#include <QOpenGLFunctions>
-#include <QtOpenGL>
 
 using namespace cv;
 
