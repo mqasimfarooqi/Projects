@@ -6,11 +6,6 @@
 
 using namespace cv;
 
-//QOpenGLWindow cameraDisplay;
-//QOpenGLContext context;
-//QOpenGLFunctions *openGLFunctions;
-//QSurfaceFormat formate;
-
 cameraApi::cameraApi(const QHostAddress hostIPv4Addr, QObject *parent)
     : QObject{parent}, mHostIP(hostIPv4Addr) {
 
@@ -29,12 +24,14 @@ void cameraApi::slotGvspReadyRead() {
 }
 
 void cameraApi::slotImageReceived() {
-//    if (!mImageBuffer.empty()) {
-//        imshow("image", mImageBuffer);
-//        waitKey();
-//    } else {
-//        qDebug() << "Image data is Null";
-//    }
+#if 0
+    if (!mImageBuffer.empty()) {
+        imshow("image", mImageBuffer);
+        waitKey();
+    } else {
+        qDebug() << "Image data is Null";
+    }
+#endif
 }
 
 void cameraApi::slotCameraHeartBeat() {
@@ -939,20 +936,6 @@ quint32 cameraApi::cameraInitializeDevice(const QHostAddress& camIP) {
 
         mCamProps.statusFlags &= ~CAMERA_STATUS_FLAGS_INITIALIZED;
     }
-
-    /* TEST */
-//    cameraDisplay.setSurfaceType(QWindow::OpenGLSurface);
-//    formate.setProfile(QSurfaceFormat::CompatibilityProfile);
-//    formate.setVersion(1,2);
-//    cameraDisplay.setFormat(formate);
-//    context.setFormat(formate);
-//    context.create();
-//    context.makeCurrent(&cameraDisplay);
-
-//    openGLFunctions = context.functions();
-
-//    cameraDisplay.show();
-    /* TEST */
 
     return error;
 }
