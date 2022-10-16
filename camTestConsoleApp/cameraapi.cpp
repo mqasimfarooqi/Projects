@@ -24,7 +24,7 @@ void cameraApi::slotGvspReadyRead() {
 }
 
 void cameraApi::slotImageReceived() {
-#if 0
+#if 1
     if (!mImageBuffer.empty()) {
         imshow("image", mImageBuffer);
         waitKey();
@@ -57,6 +57,7 @@ void cameraApi::slotCameraHeartBeat() {
 }
 
 void cameraApi::slotRequestResendRoutine() {
+#if 0
     strGvcpCmdPktResendHdr resendHdr;
     quint32 firstEmpty;
     quint32 packetIdx = 1;
@@ -78,7 +79,7 @@ void cameraApi::slotRequestResendRoutine() {
     if (!frameHT.isEmpty()) {
         memcpy(&imgLeaderHdr, frameHT.value(0).data(), sizeof(strGvspImageDataLeaderHdr));
         expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
-                                (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
+                               (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
         ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
                     expectedNoOfPackets++ : expectedNoOfPackets;
 
@@ -99,12 +100,13 @@ void cameraApi::slotRequestResendRoutine() {
         resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
 
         qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Executing resend routine for block ID = " << resendHdr.blockIdRes
-                 << " from packet " << resendHdr.firstPktId << " to " << resendHdr.lastPktId;
+                << " from packet " << resendHdr.firstPktId << " to " << resendHdr.lastPktId;
         qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unserviced resend requestes in Queue = " << mPktResendBlockIDQueue.count();
 
         /* Transmit a request to resubmit. */
         cameraRequestResend(resendHdr);
     }
+#endif
 }
 
 quint32 cameraApi::cameraXmlFetchChildElementValue(const QDomNode& parent, const QString& tagName, QString& value) {
@@ -809,9 +811,9 @@ quint32 cameraApi::cameraStartStream() {
                 streamWorker = new QThread();
                 mListStreamWorkingThread.append(streamWorker);
 
-                //mImageBuffer = new quint8[mCamProps.imageHeight * mCamProps.imageWidth];
                 streamHandler = new PacketHandler(&mStreamHT, mCamProps.streamPktSize, &mHashLocker, &mQueueLocker,
-                                                  &mPktResendBlockIDQueue, &mStreamReceiveQueue, &mImageBuffer);
+                                                  &mPktResendBlockIDQueue, &mStreamReceiveQueue, &mImageBuffer,
+                                                  mCamProps.imageHeight * mCamProps.imageWidth);
                 mListPacketHandlers.append(streamHandler);
 
                 streamWorker->setObjectName("Stream Worker " + QString::number(counter));

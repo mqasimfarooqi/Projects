@@ -2,9 +2,11 @@
 #include "cameraapi.h"
 #include "gvsp/gvsp.h"
 
-PacketHandler::PacketHandler(QHash<quint16, QHash<quint32, QByteArray>> *streamHT, quint16 streamPktSize,
+static quint8 *bufferArray[CAMERA_MAX_FRAME_BUFFER_SIZE];
+
+PacketHandler::PacketHandler(QHash<quint16, QHash<quint32, quint8*>> *streamHT, quint16 streamPktSize,
                              QReadWriteLock *hashLocker, QReadWriteLock *queueLocker, QQueue<quint16> *blockIDQueue,
-                             QQueue<QNetworkDatagram> *datagramQueue, Mat *imageBuffer,
+                             QQueue<QNetworkDatagram> *datagramQueue, Mat *imageBuffer, quint32 expectedImageSize,
                              QObject *parent) : QObject{ parent } {
     mStreamHashTablePtr = streamHT;
     mQueueFrameResendBlockID = blockIDQueue;
@@ -13,6 +15,11 @@ PacketHandler::PacketHandler(QHash<quint16, QHash<quint32, QByteArray>> *streamH
     mHashLockerPtr = hashLocker;
     mQueueLockerPtr = queueLocker;
     mImageBuffer = imageBuffer;
+    mExpectedImageSize = expectedImageSize;
+
+    for (quint8 counter = 0; counter < (quint8)CAMERA_MAX_FRAME_BUFFER_SIZE; counter++) {
+        bufferArray[counter] = new quint8[(expectedImageSize) + sizeof(strGvspImageDataLeaderHdr) + sizeof(strGvspImageDataTrailerHdr)];
+    }
 }
 
 void PacketHandler::slotServicePendingPackets() {
@@ -26,14 +33,14 @@ void PacketHandler::slotServicePendingPackets() {
     strGvspImageDataTrailerHdr imgTrailerHdr;
     QByteArray dataArr;
     QByteArray imgRawBytes;
-    quint8 *dataPtr;
+    quint8 *dataPtr, *bufferPtr;;
     quint32 expectedNoOfPackets;
     quint32 tempValue;
     bool tempBool;
     quint16 leastBlockID;
     QList<quint16> keys;
-    QHash<quint32, QByteArray> frameHT;
-    QHash<quint32, QByteArray> tempFrame;
+    QHash<quint32, quint8*> frameHT;
+    QHash<quint32, quint8*> tempFrame;
 
     /* Receive the datagram. */
     mQueueLockerPtr->lockForWrite();
@@ -76,6 +83,8 @@ void PacketHandler::slotServicePendingPackets() {
             case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
                 error = gvspPopulateImageLeaderHdrFromBigEndian(dataPtr, imgLeaderHdr);
                 if (!error) {
+                    bufferPtr = bufferArray[streamHdr.blockId$flag % CAMERA_MAX_FRAME_BUFFER_SIZE];
+
                     expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                             (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
                     ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
@@ -84,8 +93,8 @@ void PacketHandler::slotServicePendingPackets() {
                     /* Adding 2 for header and trailer. */
                     expectedNoOfPackets += 2;
 
-                    frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                                   QByteArray((char *)&imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr)));
+                    memcpy(bufferPtr, &imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr));
+                    frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, bufferPtr);
                     frameHT.reserve(expectedNoOfPackets);
 
                     mHashLockerPtr->lockForWrite();
@@ -110,11 +119,13 @@ void PacketHandler::slotServicePendingPackets() {
                     mHashLockerPtr->unlock();
 
                     if (tempBool) {
+                        bufferPtr = bufferArray[streamHdr.blockId$flag % CAMERA_MAX_FRAME_BUFFER_SIZE];
+
                         mHashLockerPtr->lockForWrite();
-                        mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, dataArr);
+                        mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, bufferPtr + mExpectedImageSize);
                         mHashLockerPtr->unlock();
 
-                        memcpy(&imgLeaderHdr, mStreamHashTablePtr->find(streamHdr.blockId$flag)->value(0).data(), sizeof(strGvspImageDataLeaderHdr));
+                        memcpy(&imgLeaderHdr, mStreamHashTablePtr->find(streamHdr.blockId$flag)->value(0), sizeof(strGvspImageDataLeaderHdr));
                         expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                                 (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
                         ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
@@ -157,14 +168,7 @@ void PacketHandler::slotServicePendingPackets() {
                             tempFrame = mStreamHashTablePtr->find(streamHdr.blockId$flag).value();
                             mHashLockerPtr->unlock();
 
-                            for (quint32 packetCounter = 1;
-                                 packetCounter < (quint32)tempFrame.count() - 1;
-                                 packetCounter++) {
-
-                                imgRawBytes.append(tempFrame[packetCounter]);
-                            }
-
-                            cvtColor(Mat(imgLeaderHdr.sizeY, imgLeaderHdr.sizeX, CV_8UC1, imgRawBytes.data()), *mImageBuffer, CV_BayerBG2BGR);
+                            cvtColor(Mat(imgLeaderHdr.sizeY, imgLeaderHdr.sizeX, CV_8UC1, bufferPtr + sizeof(strGvspImageDataLeaderHdr)), *mImageBuffer, CV_BayerBG2BGR);
 
                             emit signalImageAcquisitionComplete();
 
@@ -183,10 +187,13 @@ void PacketHandler::slotServicePendingPackets() {
             }
             break;
         case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_PAYLOAD_FORMAT_GENERIC:
+            bufferPtr = bufferArray[streamHdr.blockId$flag % CAMERA_MAX_FRAME_BUFFER_SIZE];
+
             mHashLockerPtr->lockForWrite();
             if (mStreamHashTablePtr->contains(streamHdr.blockId$flag) && (dataArr.size() > (int)sizeof(strGvspDataBlockHdr))) {
-                mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF,
-                                                                          QByteArray((char *)dataPtr, gvspPkt.data().count() - GVSP_HEADER_SIZE));
+                memcpy(bufferPtr + ((streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF) * (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)),
+                       dataPtr, dataArr.count() - GVSP_HEADER_SIZE);
+                mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, bufferPtr);
             }
             mHashLockerPtr->unlock();
             break;

@@ -14,10 +14,10 @@ class PacketHandler : public QObject
     Q_OBJECT
 
 public:
-    explicit PacketHandler(QHash<quint16, QHash<quint32, QByteArray>> *streamHT,
+    explicit PacketHandler(QHash<quint16, QHash<quint32, quint8 *>> *streamHT,
                            quint16 streamPktSize, QReadWriteLock *hashLocker, QReadWriteLock *queueLocker,
                            QQueue<quint16> *blockIDQueue, QQueue<QNetworkDatagram> *datagramQueue,
-                           Mat *imageBuffer, QObject *parent = nullptr);
+                           Mat *imageBuffer, quint32 expectedImageSize, QObject *parent = nullptr);
 
 signals:
     void signalRequestResend();
@@ -31,13 +31,14 @@ public:
 
 private:
     quint16 mPktSize;
+    quint32 mExpectedImageSize;
     Mat *mImageBuffer;
     QReadWriteLock *mHashLockerPtr;
     QReadWriteLock *mQueueLockerPtr;
     QUdpSocket *mStreamSocketPtr;
     QQueue<quint16> *mQueueFrameResendBlockID;
     QQueue<QNetworkDatagram> *mQueueDatgrams;
-    QHash<quint16, QHash<quint32, QByteArray>> *mStreamHashTablePtr;
+    QHash<quint16, QHash<quint32, quint8*>> *mStreamHashTablePtr;
 };
 
 #endif // PACKETHANDLER_H

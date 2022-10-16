@@ -115,7 +115,7 @@ private:
     QList<PacketHandler *> mListPacketHandlers;
     QQueue<QNetworkDatagram> mStreamReceiveQueue;
     QQueue<quint16> mPktResendBlockIDQueue;
-    QHash<quint16, QHash<quint32, QByteArray>> mStreamHT;
+    QHash<quint16, QHash<quint32, quint8*>> mStreamHT;
 };
 
 #endif // CAMERAAPI_H
