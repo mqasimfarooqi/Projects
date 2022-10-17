@@ -27,12 +27,13 @@ using namespace cv;
 #define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
 #define CAMERA_MAX_FRAME_BUFFER_SIZE (3)
 #define CAMERA_WAIT_FOR_ACK_MS (100)
-#define CAMERA_GVSP_PAYLOAD_SIZE (7000)
+#define CAMERA_GVSP_PAYLOAD_SIZE (8500)
 
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 
 #define CAMERA_API_STATUS_SUCCESS (0)
 #define CAMERA_API_STATUS_FAILED (1)
+#define CAMERA_API_ENABLE_RESEND (0)
 #define CAMERA_API_STATUS_CAMERA_UNINITIALIZED (2)
 
 /* SwissKnife is not supported. */
@@ -113,6 +114,7 @@ private:
     Mat mImageBuffer;
     QList<QThread *> mListStreamWorkingThread;
     QList<PacketHandler *> mListPacketHandlers;
+    QList<quint8*> mStreamPreAllocatedBuffers;
     QQueue<QNetworkDatagram> mStreamReceiveQueue;
     QQueue<quint16> mPktResendBlockIDQueue;
     QHash<quint16, QHash<quint32, quint8*>> mStreamHT;

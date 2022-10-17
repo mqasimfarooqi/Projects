@@ -17,7 +17,8 @@ public:
     explicit PacketHandler(QHash<quint16, QHash<quint32, quint8 *>> *streamHT,
                            quint16 streamPktSize, QReadWriteLock *hashLocker, QReadWriteLock *queueLocker,
                            QQueue<quint16> *blockIDQueue, QQueue<QNetworkDatagram> *datagramQueue,
-                           Mat *imageBuffer, quint32 expectedImageSize, QObject *parent = nullptr);
+                           Mat *imageBuffer, quint32 expectedImageSize, QList<quint8*> rawDataBuffer,
+                           QObject *parent = nullptr);
 
 signals:
     void signalRequestResend();
@@ -33,6 +34,7 @@ private:
     quint16 mPktSize;
     quint32 mExpectedImageSize;
     Mat *mImageBuffer;
+    QList<quint8*> mRawDataBuffer;
     QReadWriteLock *mHashLockerPtr;
     QReadWriteLock *mQueueLockerPtr;
     QUdpSocket *mStreamSocketPtr;

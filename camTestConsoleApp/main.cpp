@@ -90,10 +90,10 @@ int main(int argc, char *argv[]) {
         qInfo() << "Unable to initialize camera.";
     }
 
-    hostAddr = QHostAddress("192.168.10.3");
+    hostAddr = QHostAddress("192.168.10.20");
     cheetah = new cameraApi(hostAddr);
 
-    cheetah->cameraDiscoverDevice(QHostAddress("255.255.255.255"), discHeaders);
+    cheetah->cameraDiscoverDevice(QHostAddress("192.168.10.255"), discHeaders);
     if (discHeaders.count() > 0) {
         for (int iterator = 0; iterator < discHeaders.count(); iterator++) {
             if (QString::fromLocal8Bit((char *)discHeaders.at(iterator).modelName, 32).contains("POE-C2410C")) {
