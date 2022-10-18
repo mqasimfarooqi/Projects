@@ -213,6 +213,7 @@ quint32 cameraApi::cameraReadCameraAttribute(const QList<QString>& attributeList
     }
 
     if (error == CAMERA_API_STATUS_SUCCESS) {
+
         /* Check to see if this function is provided with a valid XML file. */
         if (!mCamXmlFile.isDocument()) {
 
@@ -308,6 +309,17 @@ quint32 cameraApi::cameraXmlFetchAttrRegister(const QString& nodeName, QDomNode&
 
         if ((regNode.toElement().nodeName() == "IntConverter") ||
             (regNode.toElement().nodeName() == "Integer")) {
+
+            /* Fetch register name from this element. */
+            error = cameraXmlFetchChildElementValue(regNode, "pValue", tempStr);
+
+            if (error == CAMERA_API_STATUS_SUCCESS) {
+
+                /* Fetch the register element. */
+                error = cameraXmlFetchAttrElement(tempStr, regNode);
+            }
+
+        } else if (regNode.toElement().nodeName() == "Converter") {
 
             /* Fetch register name from this element. */
             error = cameraXmlFetchChildElementValue(regNode, "pValue", tempStr);

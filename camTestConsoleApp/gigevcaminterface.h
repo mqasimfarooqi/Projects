@@ -1,5 +1,5 @@
-#ifndef CAMINTERFACE_H
-#define CAMINTERFACE_H
+#ifndef GIGEVCAMINTERFACE_H
+#define GIGEVCAMINTERFACE_H
 
 #include <QObject>
 #include <QUdpSocket>
@@ -12,7 +12,7 @@
 #define CAMERA_INTERFACE_STATUS_SUCCESS (0)
 #define CAMERA_INTERFACE_STATUS_FAILED (1)
 
-class caminterface
+class gigevCamInterface
 {
 
 public:
@@ -23,4 +23,4 @@ public:
     static bool camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& rawSocketData);
 };
 
-#endif // CAMINTERFACE_H
+#endif // GIGEVCAMINTERFACE_H

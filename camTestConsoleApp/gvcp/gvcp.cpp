@@ -1,5 +1,5 @@
 #include "gvcp.h"
-#include "caminterface.h"
+#include "gigevcaminterface.h"
 
 unsigned char gvcpReverseBits(unsigned char b) {
    b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
@@ -213,7 +213,7 @@ quint32 gvcpReceiveAck(QUdpSocket& udpSock, strNonStdGvcpAckHdr& ackHeader) {
     QNetworkDatagram datagram = { 0 };
 
     /* Receive datagram. */
-    error = caminterface::camGigeVEthReceiveAck(udpSock, datagram);
+    error = gigevCamInterface::camGigeVEthReceiveAck(udpSock, datagram);
     if (!error && datagram.data().length()) {
 
         /* A pointer pointing to the data of byte array. */
@@ -276,7 +276,7 @@ quint32 gvcpSendCmd(QUdpSocket& udpSock, const quint16 cmdType, const QByteArray
 
         datagram.setDestination(destAddr, port);
         datagram.setData(dataArray);
-        error = caminterface::camGigeVEthSendCmd(udpSock, datagram);
+        error = gigevCamInterface::camGigeVEthSendCmd(udpSock, datagram);
     }
 
     return error;

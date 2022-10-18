@@ -27,7 +27,6 @@ void PacketHandler::slotServicePendingPackets() {
     strGvspImageDataLeaderHdr imgLeaderHdr;
     strGvspImageDataTrailerHdr imgTrailerHdr;
     QByteArray dataArr;
-    QByteArray imgRawBytes;
     quint8 *dataPtr, *bufferPtr;
     quint32 expectedNoOfPackets;
     quint32 tempValue;
@@ -169,9 +168,6 @@ void PacketHandler::slotServicePendingPackets() {
                             mHashLockerPtr->unlock();
 
                             emit signalImageAcquisitionComplete();
-
-                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Size of image = " << imgRawBytes.count();
-                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Number of packets in this frame = " << tempFrame.count();
 
                             mHashLockerPtr->lockForWrite();
                             mStreamHashTablePtr->remove(streamHdr.blockId$flag);

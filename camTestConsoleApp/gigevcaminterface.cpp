@@ -1,7 +1,7 @@
-#include "caminterface.h"
+#include "gigevcaminterface.h"
 
 /* This function populates the relevant headers sends the packet. */
-bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram) {
+bool gigevCamInterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& datagram) {
 
     quint32 error = CAMERA_INTERFACE_STATUS_SUCCESS;
 
@@ -36,7 +36,7 @@ bool caminterface::camGigeVEthSendCmd(QUdpSocket& udpSock, QNetworkDatagram& dat
     return error;
 }
 
-bool caminterface::camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& datagram)
+bool gigevCamInterface::camGigeVEthReceiveAck(QUdpSocket& udpSock, QNetworkDatagram& datagram)
 {
     quint32 error = CAMERA_INTERFACE_STATUS_SUCCESS;
 

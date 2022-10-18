@@ -1,5 +1,5 @@
 #include "gvsp.h"
-#include "caminterface.h"
+#include "gigevcaminterface.h"
 
 /* Helper functions. */
 qint32 gvspPopulateGenericDataHdrFromBigEndian(const quint8 *dataPtr, strGvspDataBlockHdr& hdr) {

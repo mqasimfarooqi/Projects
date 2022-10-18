@@ -46,7 +46,8 @@ const QList<QString> lookupTags = {
     "Enumeration",
     "IntConverter",
     "StructEntry",
-    "Command"
+    "Command",
+    "Converter"
 };
 
 /* General camera properties structure. */
