@@ -1,5 +1,5 @@
 #include <QCoreApplication>
-#include "cameraapi.h"
+#include "camapi.h"
 
 #ifdef GIT_TRACKED
 const QString gitCommitHash = GIT_COMMIT_HASH;
@@ -11,7 +11,7 @@ const QString buildTime = __TIME__;
 
 int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
-    cameraApi *cheetah;
+    CamApi *cheetah;
     QUdpSocket m_sock;
     QHostAddress hostAddr;
     QList<QString> featureList;
@@ -36,20 +36,8 @@ int main(int argc, char *argv[]) {
     qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << << "This project is not tracked.";
 #endif
 
-    featureList.append("GevCCPReg"); //gigeCCPReg
-    featureList.append("GevHeartbeatTimeoutReg"); //gigeHeartBeatReg
-    featureList.append("GevSCPHostPortReg"); //gigeStreamChannelPortReg
-    featureList.append("GevSCDAReg"); //gigeStreamChannelDestinationReg
-    featureList.append("GevSCSPReg"); //gigeStreamChannelSourcePortReg
-    featureList.append("GevSCPSPacketSizeReg"); //gigeStreamChannelPacketSizeReg
-    featureList.append("GevSCPDReg"); //gigeStreamChannelPacketDelayReg
-    featureList.append("AcquisitionModeReg"); //gigeAquisitionModeReg
-    featureList.append("AcquisitionStartReg"); //gigeAquisitionStartReg
-    featureList.append("AcquisitionStopReg"); //gigeAquisitionStopReg
-    featureList.append("OffsetXReg"); //gigeSensorOffSetXReg
-    featureList.append("OffsetYReg"); //gigeSensorOffSetYReg
-    featureList.append("HeightReg"); //gigeSensorHeightSelectionRegDL
-    featureList.append("WidthReg"); //gigeSensorWidthSelectionRegDL
+    featureList.append("GevCCP");
+    featureList.append("GevHeartbeatTimeout");
 
     readReg.registerAddress = 0xa00;
     regAddresses.append(readReg);
@@ -91,14 +79,14 @@ int main(int argc, char *argv[]) {
     }
 
     hostAddr = QHostAddress("192.168.10.20");
-    cheetah = new cameraApi(hostAddr);
+    cheetah = new CamApi(hostAddr);
 
-    cheetah->cameraDiscoverDevice(QHostAddress("192.168.10.255"), discHeaders);
+    cheetah->DiscoverDevice(QHostAddress("192.168.10.255"), discHeaders);
     if (discHeaders.count() > 0) {
         for (int iterator = 0; iterator < discHeaders.count(); iterator++) {
             if (QString::fromLocal8Bit((char *)discHeaders.at(iterator).modelName, 32).contains("POE-C2410C")) {
-                cheetah->cameraInitializeDevice(QHostAddress(discHeaders.at(iterator).currentIp));
-                cheetah->cameraStartStream();
+                cheetah->InitializeDevice(QHostAddress(discHeaders.at(iterator).currentIp));
+                cheetah->StartStream();
                 //cheetah->cameraStopStream();
                 break;
             }
@@ -115,7 +103,7 @@ int main(int argc, char *argv[]) {
         switch (option) {
         case '0':
             discHeaders.clear();
-            error = cheetah->cameraDiscoverDevice(QHostAddress("255.255.255.255"), discHeaders);
+            error = cheetah->DiscoverDevice(QHostAddress("255.255.255.255"), discHeaders);
             if (error) {
                 qInfo() << "Command failed";
             } else {
@@ -141,7 +129,7 @@ int main(int argc, char *argv[]) {
             break;
 
         case '1':
-            error = cheetah->cameraReadCameraAttribute(featureList, camAttributes);
+            error = cheetah->ReadCameraAttribute(featureList, camAttributes);
             if (error) {
                 qInfo() << "Command failed";
             } else {
@@ -155,7 +143,7 @@ int main(int argc, char *argv[]) {
             break;
 
         case '2':
-            error = cheetah->cameraWriteRegisterValue(writeUnit);
+            error = cheetah->WriteRegisterValue(writeUnit);
             if (error) {
                 qInfo() << "Command failed";
             } else {
@@ -164,7 +152,7 @@ int main(int argc, char *argv[]) {
             break;
 
         case '3':
-            error = cheetah->cameraReadRegisterValue(regAddresses, regValues);
+            error = cheetah->ReadRegisterValue(regAddresses, regValues);
             for (int i = 0; i < regAddresses.count(); i++) {
                 qInfo() << regAddresses.at(i).registerAddress << " = " << regValues.at(i);
             }
@@ -173,7 +161,7 @@ int main(int argc, char *argv[]) {
             break;
 
         case '4':
-            error = cheetah->cameraStartStream();
+            error = cheetah->StartStream();
             a.exec();
 
             break;

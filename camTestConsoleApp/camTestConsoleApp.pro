@@ -10,8 +10,6 @@ unix {
     LIBS += -L$$PWD/quazip -lz
 }
 
-LIBS += `pkg-config --libs opencv4`
-
 #DEFINES += QT_NO_INFO_OUTPUT
 
 system(git):DEFINES += HAS_GIT
@@ -30,7 +28,7 @@ DEFINES += "GIT_BRANCH=\"\\\"$${GIT_BRANCH}\\\"\"" \
 #endif
 
 SOURCES += \
-        cameraapi.cpp \
+        camapi.cpp \
         gigevcaminterface.cpp \
         gvcp/gvcp.cpp \
         gvsp/gvsp.cpp \
@@ -57,7 +55,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    cameraapi.h \
+    camapi.h \
     gigev.h \
     gigevcaminterface.h \
     gvcp/gvcp.h \
