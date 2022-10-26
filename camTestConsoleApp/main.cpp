@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
         qInfo() << "Unable to initialize camera.";
     }
 
-    hostAddr = QHostAddress("192.168.10.20");
+    hostAddr = QHostAddress("192.168.10.3");
     cheetah = new CamApi(hostAddr);
 
     cheetah->DiscoverDevice(QHostAddress("192.168.10.255"), discHeaders);

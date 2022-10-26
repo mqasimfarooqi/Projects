@@ -29,7 +29,7 @@ DEFINES += "GIT_BRANCH=\"\\\"$${GIT_BRANCH}\\\"\"" \
 
 SOURCES += \
         camapi.cpp \
-        gigevcaminterface.cpp \
+        camethinterface.cpp \
         gvcp/gvcp.cpp \
         gvsp/gvsp.cpp \
         main.cpp \
@@ -56,8 +56,8 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     camapi.h \
+    camethinterface.h \
     gigev.h \
-    gigevcaminterface.h \
     gvcp/gvcp.h \
     gvcp/gvcpAckHeaders.h \
     gvcp/gvcpCmdHeaders.h \
