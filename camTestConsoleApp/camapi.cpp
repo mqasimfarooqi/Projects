@@ -820,20 +820,22 @@ quint32 CamApi::StartStream() {
                 mStreamPreAllocatedBuffers.append(tempPtr);
             }
 
-            mStreamConsumerThread = new QThread();
-            mStreamConsumerThread->setObjectName("Stream Worker");
-
             mStreamConsumerObject = new PacketHandler(&mStreamHashTable, mCamProps.streamPktSize, &mLock,
                                                      mCamProps.imageHeight * mCamProps.imageWidth,
                                                      mStreamPreAllocatedBuffers);
-            mStreamConsumerObject->moveToThread(mStreamConsumerThread);
 
-            connect(this, &CamApi::signalDatagramEnqueued, mStreamConsumerObject, &PacketHandler::slotServicePendingPackets, Qt::QueuedConnection);
             connect(mStreamConsumerObject, &PacketHandler::signalRequestResend, this, &CamApi::slotRequestResendRoutine, Qt::QueuedConnection);
             connect(mStreamConsumerObject, &PacketHandler::signalImageAcquisitionComplete, this, &CamApi::slotImageReceived, Qt::QueuedConnection);
 
+#if (CAMERA_API_ENABLE_DISJOINT_PARCER == 1)
+            mStreamConsumerThread = new QThread();
+            mStreamConsumerThread->setObjectName("Stream Worker");
+            mStreamConsumerObject->moveToThread(mStreamConsumerThread);
             mStreamConsumerThread->start();
-
+            connect(this, &CamApi::signalDatagramEnqueued, mStreamConsumerObject, &PacketHandler::slotServicePendingPackets, Qt::QueuedConnection);
+#else
+            connect(this, &CamApi::signalDatagramEnqueued, mStreamConsumerObject, &PacketHandler::slotServicePendingPackets, Qt::DirectConnection);
+#endif
             /* Make relevant connections. */
             connect(&mGvspSock, &QUdpSocket::readyRead, this, &CamApi::slotGvspReadyRead, Qt::DirectConnection);
 
@@ -860,9 +862,11 @@ quint32 CamApi::StopStream() {
     error = WriteCameraAttribute(QList<QString>() << "AcquisitionStop",
                                        QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
 
+#if (CAMERA_API_ENABLE_DISJOINT_PARCER == 1)
     mStreamConsumerThread->exit();
     while(mStreamConsumerThread->isRunning());
     delete(mStreamConsumerThread);
+#endif
 
     delete(mStreamConsumerObject);
 

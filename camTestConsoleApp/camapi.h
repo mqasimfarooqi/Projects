@@ -15,10 +15,11 @@
 #define CAMERA_GVCP_BIND_PORT (0)
 #define CAMERA_GVSP_BIND_PORT (0)
 #define CAMERA_API_ENABLE_RESEND (0)
+#define CAMERA_API_ENABLE_DISJOINT_PARCER (0)
 #define CAMERA_MAX_ACK_FETCH_RETRY_COUNT (3)
 #define CAMERA_MAX_FRAME_BUFFER_SIZE (3)
 #define CAMERA_WAIT_FOR_ACK_MS (25)
-#define CAMERA_GVSP_PAYLOAD_SIZE (8500)
+#define CAMERA_GVSP_PAYLOAD_SIZE (5000)
 
 #define CAMERA_STATUS_FLAGS_INITIALIZED BIT(0)
 
@@ -101,7 +102,9 @@ private:
     CameraProperties mCamProps;
     QReadWriteLock mLock;
     QThread mStreamProducerThread;
+#if (CAMERA_API_ENABLE_DISJOINT_PARCER == 1)
     QThread *mStreamConsumerThread;
+#endif
     PacketHandler *mStreamConsumerObject;
     QList<quint8*> mStreamPreAllocatedBuffers;
     QHash<quint16, QHash<quint32, quint8*>> mStreamHashTable;

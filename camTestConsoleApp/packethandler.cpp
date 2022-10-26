@@ -125,7 +125,8 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
                             emit signalRequestResend(streamHdr.blockId$flag);
 #endif
                         } else {
-                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Packet received completely with block ID = " << streamHdr.blockId$flag;
+                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Packet received completely with block ID = " << streamHdr.blockId$flag <<
+                                       " by " << QThread::currentThread();
 
                             mLockPtr->lockForRead();
                             frameHT = mStreamHashTablePtr->find(streamHdr.blockId$flag).value();
