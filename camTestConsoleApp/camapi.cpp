@@ -12,13 +12,19 @@ CamApi::CamApi(const QHostAddress hostIPv4Addr, QObject *parent)
 }
 
 void CamApi::slotGvspReadyRead() {
+
+    /* Keep receiving packets until there are pending datagrams. */
     while (mGvspSock.hasPendingDatagrams()) {
+
+        /* Emit a signal with the received datagram. */
         emit signalDatagramEnqueued(mGvspSock.receiveDatagram());
     }
 }
 
 void CamApi::slotImageReceived(quint8 *dataPtr) {
-#if 1
+    /* This function gives the data pointer to the received image buffer. */
+
+#if 0
     static bool bla = false;
     static quint32 previous = 0;
     static QElapsedTimer timer;
@@ -48,7 +54,7 @@ void CamApi::slotCameraHeartBeat() {
         /* Try to acquire control again. */
         val = qToBigEndian(0x2);
         error = WriteCameraAttribute(QList<QString>() << "GevCCP",
-                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+                                     QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
 
         if (error != CAMERA_API_STATUS_SUCCESS) {
 
@@ -66,6 +72,7 @@ void CamApi::slotRequestResendRoutine(quint16 blockID) {
     strGvspImageDataLeaderHdr imgLeaderHdr;
     QHash<quint32, quint8*> frameHT;
 
+    /* Retreive the frame from hash table. */
     mLock.lockForRead();
     if (mStreamHashTable.contains(blockID)) {
         frameHT = mStreamHashTable[blockID];
@@ -73,7 +80,11 @@ void CamApi::slotRequestResendRoutine(quint16 blockID) {
     mLock.unlock();
 
     if (!frameHT.isEmpty()) {
+
+        /* Extract image leader from the frame. */
         memcpy(&imgLeaderHdr, frameHT.value(0), sizeof(strGvspImageDataLeaderHdr));
+
+        /* Calculate expected number of packets from the retrieved information. */
         expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
         ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mCamProps.streamPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
@@ -90,6 +101,7 @@ void CamApi::slotRequestResendRoutine(quint16 blockID) {
         }
         firstEmpty = packetIdx;
 
+        /* Construct resend header. */
         resendHdr.blockIdRes = blockID;
         resendHdr.firstPktId = firstEmpty;
         resendHdr.lastPktId = expectedNoOfPackets - 1;
@@ -126,12 +138,14 @@ quint32 byteArrayToUint32(const QByteArray& bytes) {
     QByteArray byteArray;
     quint32 number = 0;
 
+    /* Take only the first four bytes from byte array. */
     if (bytes.count() > 4) {
         byteArray = bytes.mid(bytes.count() - 4);
     } else {
         byteArray = bytes;
     }
 
+    /* Push bytes to the "number" variable. */
     QDataStream stream(byteArray);
     for (ulong var = byteArray.size(); var > 0; var--) {
         stream >> *((quint8 *)&number + (var - 1));
@@ -159,6 +173,8 @@ quint32 CamApi::ReadXmlFileFromDevice() {
             url = first_url.mid(0, first_url.indexOf('\0')).split(';');
 
             if ((error == CAMERA_API_STATUS_SUCCESS) && (url.count() == 3)) {
+
+                /* Fetch the XML file from camera. */
                 error = XmlFetchXmlFromDevice(url[0], url[1], url[2], xml_data);
             } else {
 
@@ -303,7 +319,7 @@ quint32 CamApi::XmlFetchAttrRegister(const QString& nodeName, QDomNode& regNode)
     if (error == CAMERA_API_STATUS_SUCCESS) {
 
         if ((regNode.toElement().nodeName() == "IntConverter") ||
-            (regNode.toElement().nodeName() == "Integer")) {
+                (regNode.toElement().nodeName() == "Integer")) {
 
             /* Fetch register name from this element. */
             error = XmlFetchChildElementValue(regNode, "pValue", tempStr);
@@ -455,8 +471,8 @@ quint32 CamApi::WriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& writeUnit
         /* Receive data in the array. */
         error = CAMERA_API_STATUS_FAILED;
         for (int retryCount = 0;
-            (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
-            (retryCount++)) {
+             (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && error;
+             (retryCount++)) {
 
             /* Wait for the signal, for reception of first URL. */
             if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
@@ -522,8 +538,8 @@ quint32 CamApi::ReadMemoryBlock(const quint32 address, const quint16 size, QByte
             /* Receive data in the array. */
             error = CAMERA_API_STATUS_FAILED;
             for (retry_count = 0;
-                (retry_count < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && (error == CAMERA_API_STATUS_FAILED);
-                (retry_count++)) {
+                 (retry_count < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && (error == CAMERA_API_STATUS_FAILED);
+                 (retry_count++)) {
 
                 /* Wait for the signal, for reception of first URL. */
                 if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
@@ -654,8 +670,8 @@ quint32 CamApi::ReadRegisterValue(const QList<strGvcpCmdReadRegHdr>& addressList
         /* Receive data in the array. */
         error = CAMERA_API_STATUS_FAILED;
         for (int retryCount = 0;
-            (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && (error == CAMERA_API_STATUS_FAILED);
-            (retryCount++)) {
+             (retryCount < CAMERA_MAX_ACK_FETCH_RETRY_COUNT) && (error == CAMERA_API_STATUS_FAILED);
+             (retryCount++)) {
 
             /* Wait for the signal, for reception of first URL. */
             if (mGvcpSock.waitForReadyRead(CAMERA_WAIT_FOR_ACK_MS)) {
@@ -768,14 +784,14 @@ quint32 CamApi::StartStream() {
         /* Write the destination address Gvsp packets. */
         val = qToBigEndian(mHostIP.toIPv4Address());
         error = WriteCameraAttribute(QList<QString>() << "GevSCDA",
-                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+                                     QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
     }
 
     if (error == CAMERA_API_STATUS_SUCCESS) {
 
         val = qToBigEndian(CAMERA_GVSP_PAYLOAD_SIZE);
         error = WriteCameraAttribute(QList<QString>() << "GevSCPSPacketSize",
-                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+                                     QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
     }
 
     if (error == CAMERA_API_STATUS_SUCCESS) {
@@ -811,7 +827,7 @@ quint32 CamApi::StartStream() {
             /* Write the port to listen to for Gvsp packets. */
             val = qToBigEndian(mGvspSock.localPort());
             error = WriteCameraAttribute(QList<QString>() << "GevSCPHostPort",
-                                               QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint16)));
+                                         QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint16)));
 
             for (quint8 counter = 0; counter < CAMERA_MAX_FRAME_BUFFER_SIZE; counter++) {
                 tempPtr = new quint8[((mCamProps.imageHeight * mCamProps.imageWidth)) +
@@ -821,8 +837,8 @@ quint32 CamApi::StartStream() {
             }
 
             mStreamConsumerObject = new PacketHandler(&mStreamHashTable, mCamProps.streamPktSize, &mLock,
-                                                     mCamProps.imageHeight * mCamProps.imageWidth,
-                                                     mStreamPreAllocatedBuffers);
+                                                      mCamProps.imageHeight * mCamProps.imageWidth,
+                                                      mStreamPreAllocatedBuffers);
 
             connect(mStreamConsumerObject, &PacketHandler::signalRequestResend, this, &CamApi::slotRequestResendRoutine, Qt::QueuedConnection);
             connect(mStreamConsumerObject, &PacketHandler::signalImageAcquisitionComplete, this, &CamApi::slotImageReceived, Qt::QueuedConnection);
@@ -848,7 +864,7 @@ quint32 CamApi::StartStream() {
     if (error == CAMERA_API_STATUS_SUCCESS) {
         val = qToBigEndian(0x1);
         error = WriteCameraAttribute(QList<QString>() << "AcquisitionStart",
-                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+                                     QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
     }
 
     return error;
@@ -860,7 +876,7 @@ quint32 CamApi::StopStream() {
 
     val = qToBigEndian(0x1);
     error = WriteCameraAttribute(QList<QString>() << "AcquisitionStop",
-                                       QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+                                 QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
 
 #if (CAMERA_API_ENABLE_DISJOINT_PARCER == 1)
     mStreamConsumerThread->exit();
@@ -910,7 +926,7 @@ quint32 CamApi::InitializeDevice(const QHostAddress& camIP) {
         /* Acquire control channel. */
         val = qToBigEndian(0x2);
         error = WriteCameraAttribute(QList<QString>() << "GevCCP",
-                                           QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
+                                     QList<QByteArray>() << QByteArray::fromRawData((char *)&val, sizeof(quint32)));
     }
 
     if (error == CAMERA_API_STATUS_SUCCESS) {
@@ -945,7 +961,7 @@ quint32 CamApi::InitializeDevice(const QHostAddress& camIP) {
 }
 
 quint32 CamApi::XmlFetchXmlFromDevice(const QByteArray& fileName, const QByteArray& startAddress,
-                                               const QByteArray size, QByteArray& xmlData) {
+                                      const QByteArray size, QByteArray& xmlData) {
     quint32 error;
     QByteArray retrievedXml;
     QNetworkDatagram datagram;
@@ -963,6 +979,7 @@ quint32 CamApi::XmlFetchXmlFromDevice(const QByteArray& fileName, const QByteArr
             stream << retrievedXml;
         }
 
+        /* Extract the fetched xml file which is in zip format. */
         list = JlCompress::extractDir(fileName, fileName + "_extracted");
         if (list.isEmpty()) {
 
@@ -970,6 +987,7 @@ quint32 CamApi::XmlFetchXmlFromDevice(const QByteArray& fileName, const QByteArr
 
         } else {
 
+            /* Set the name for new XML file. */
             xmlFile.setFileName(list.first());
             if (xmlFile.open(QIODevice::ReadWrite)) {
                 xmlData = xmlFile.readAll();

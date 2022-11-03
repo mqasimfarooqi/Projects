@@ -50,18 +50,25 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
             }
         }
 
-        /* Switch on the bases of packet format. */
+        /* Switch on the bases of packet format field. */
         switch ((streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT)
                 >> GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_PKTFMT_SHIFT) {
+
         case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_LEADER_FORMAT:
+
+            /* Parse the leader. */
             leader.payloadTypeSpecific = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPESPECIFIC));
             leader.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataLeaderHdrPAYLOADTYPE));
 
+            /* Switch on leader payload type. */
             switch (leader.payloadType) {
             case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
+
+                /* Parse image leader header. */
                 error = gvspPopulateImageLeaderHdrFromBigEndian(dataPtr, imgLeaderHdr);
                 if (!error) {
 
+                    /* Calculate the expected number of packets. */
                     expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                             (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
                     ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
@@ -70,16 +77,20 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
                     /* Adding 2 for header and trailer. */
                     expectedNoOfPackets += 2;
 
+                    /* Copy data into the buffer. */
                     mLockPtr->lockForWrite();
                     bufferPtr = mRawDataBuffer[streamHdr.blockId$flag % CAMERA_MAX_FRAME_BUFFER_SIZE];
                     memcpy(bufferPtr, &imgLeaderHdr, sizeof(strGvspImageDataLeaderHdr));
 
+                    /* Make a new frame entry for the hash table. */
                     frameHT.insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, bufferPtr);
                     frameHT.reserve(expectedNoOfPackets);
 
+                    /* Insert newly made entry into the hash table. */
                     mStreamHashTablePtr->insert(streamHdr.blockId$flag, frameHT);
                     mLockPtr->unlock();
 
+                    /* Clean up entries from the hash table. */
                     HashTableCleanup(CAMERA_MAX_FRAME_BUFFER_SIZE);
 
                 } else {
@@ -89,25 +100,35 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
             }
             break;
         case GVSP_DATA_BLOCK_HDR_PKT_FMT_DATA_TRAILER_FORMAT:
+
+            /* Parse trailer. */
             trailer.reserved = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrRESERVED));
             trailer.payloadType = qFromBigEndian(*(quint16 *)(dataPtr + strGvspGenericDataTrailerHdrPAYLOADTYPE));
 
             switch (trailer.payloadType) {
             case GVSP_DATA_BLOCK_HDR_PAYLOAD_TYPE_IMAGE:
+
+                /* Parse image trailer. */
                 error = gvspPopulateImageTrailerHdrFromBigEndian(dataPtr, imgTrailerHdr);
                 if (!error) {
+
+                    /* Check to see if an entry already exists in the hash table. */
                     mLockPtr->lockForRead();
                     tempBool = mStreamHashTablePtr->contains(streamHdr.blockId$flag);
                     mLockPtr->unlock();
 
                     if (tempBool) {
 
+                        /* Copy data into the buffer. */
                         mLockPtr->lockForWrite();
                         bufferPtr = mRawDataBuffer[streamHdr.blockId$flag % CAMERA_MAX_FRAME_BUFFER_SIZE];
                         mStreamHashTablePtr->find(streamHdr.blockId$flag)->insert(streamHdr.extId_res_pktFmt_pktID$res & 0x00FFFFFF, bufferPtr + mExpectedImageSize);
                         mLockPtr->unlock();
 
+                        /* Extract image leader from the frame retrieved from hash table. */
                         memcpy(&imgLeaderHdr, mStreamHashTablePtr->find(streamHdr.blockId$flag)->value(0), sizeof(strGvspImageDataLeaderHdr));
+
+                        /* Calculate the expected number of packets. */
                         expectedNoOfPackets = ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) /
                                                 (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE));
                         ((imgLeaderHdr.sizeX * imgLeaderHdr.sizeY) % (mPktSize - IP_HEADER_SIZE - UDP_HEADER_SIZE - GVSP_HEADER_SIZE)) ?
