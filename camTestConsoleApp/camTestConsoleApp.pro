@@ -32,6 +32,7 @@ SOURCES += \
         camethinterface.cpp \
         gvcp/gvcp.cpp \
         gvsp/gvsp.cpp \
+        logger.cpp \
         main.cpp \
         packethandler.cpp \
         quazip/JlCompress.cpp \
@@ -64,6 +65,7 @@ HEADERS += \
     gvcp/gvcpHeaders.h \
     gvsp/gvsp.h \
     gvsp/gvspHeaders.h \
+    logger.h \
     packethandler.h \
     quazip/JlCompress.h \
     quazip/ioapi.h \
