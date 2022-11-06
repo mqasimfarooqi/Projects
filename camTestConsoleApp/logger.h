@@ -8,6 +8,10 @@
 #include <QDir>
 #include <iostream>
 #include <QTextStream>
+#include <QElapsedTimer>
+#include <QThread>
+
+#define MAX_LOG_ENTRIES (10000)
 
 class logger : public QObject
 {
@@ -15,6 +19,7 @@ class logger : public QObject
 public:
     explicit logger(QObject *parent = nullptr);
 
+    static quint64 recordCount;
     static bool logging;
     static QString filename;
     static void attach();

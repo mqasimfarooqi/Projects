@@ -58,7 +58,7 @@ void CamApi::slotCameraHeartBeat() {
 
         if (error != CAMERA_API_STATUS_SUCCESS) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Failed to acquire control channel";
+            qDebug() << "Failed to acquire control channel";
         }
     }
 }
@@ -107,7 +107,7 @@ void CamApi::slotRequestResendRoutine(quint16 blockID) {
         resendHdr.lastPktId = expectedNoOfPackets - 1;
         resendHdr.streamChannelIdx = mCamProps.streamChannelIdx;
 
-        qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Executing resend routine for block ID = " << resendHdr.blockIdRes
+        qInfo() << "Executing resend routine for block ID = " << resendHdr.blockIdRes
                 << " from packet " << resendHdr.firstPktId << " to " << resendHdr.lastPktId;
 
         /* Transmit a request to resubmit. */
@@ -178,17 +178,17 @@ quint32 CamApi::ReadXmlFileFromDevice() {
                 error = XmlFetchXmlFromDevice(url[0], url[1], url[2], xml_data);
             } else {
 
-                qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Correct URL is not found.";
+                qDebug() << "Correct URL is not found.";
                 error = CAMERA_API_STATUS_FAILED;
             }
 
         } else if (first_url.contains("http:")) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unsupported location of XML file.";
+            qDebug() << "Unsupported location of XML file.";
             error = CAMERA_API_STATUS_FAILED;
         } else {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unsupported location of XML file.";
+            qDebug() << "Unsupported location of XML file.";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -198,7 +198,7 @@ quint32 CamApi::ReadXmlFileFromDevice() {
         /* Set content of the document. */
         if(!mCamXmlFile.setContent(xml_data)) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unable to correctly parse the xml file fetched from device.";
+            qDebug() << "Unable to correctly parse the xml file fetched from device.";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -228,7 +228,7 @@ quint32 CamApi::ReadCameraAttribute(const QList<QString>& attributeList, QList<Q
         /* Check to see if this function is provided with a valid XML file. */
         if (!mCamXmlFile.isDocument()) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "XML file for the camera is not a valid file.";
+            qDebug() << "XML file for the camera is not a valid file.";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -281,7 +281,7 @@ quint32 CamApi::ReadCameraAttribute(const QList<QString>& attributeList, QList<Q
                             tempData.append((char *)&tempRegisterVal.at(0), sizeof(quint32));
                         } else {
 
-                            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Data not received from attribute " << attributeList.at(var);
+                            qDebug() << "Data not received from attribute " << attributeList.at(var);
                         }
                     }
                 }
@@ -365,7 +365,7 @@ quint32 CamApi::WriteCameraAttribute(const QList<QString>& attributeList, const 
         /* Check to see if this function is provided with a valid XML file. */
         if (!mCamXmlFile.isDocument()) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "XML file for the camera is not a valid file.";
+            qDebug() << "XML file for the camera is not a valid file.";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -374,7 +374,7 @@ quint32 CamApi::WriteCameraAttribute(const QList<QString>& attributeList, const 
 
         if (attributeList.count() != regValues.count()) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Not all the values against each attribute is provided.";
+            qDebug() << "Not all the values against each attribute is provided.";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -409,7 +409,7 @@ quint32 CamApi::WriteCameraAttribute(const QList<QString>& attributeList, const 
 
                 if (length > sizeof(quint32)) {
 
-                    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Not yet supported to write memory greater than " << sizeof(quint32);
+                    qDebug() << "Not yet supported to write memory greater than " << sizeof(quint32);
                 } else {
 
                     /* Set the header. */
@@ -420,7 +420,7 @@ quint32 CamApi::WriteCameraAttribute(const QList<QString>& attributeList, const 
                     error = WriteRegisterValue(QList<strGvcpCmdWriteRegHdr>() << writeUnit);
                     if (error == CAMERA_API_STATUS_FAILED) {
 
-                        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Unable to write register at address: " << writeUnit.registerAddress;
+                        qDebug() << "Unable to write register at address: " << writeUnit.registerAddress;
                     }
                 }
             }
@@ -450,7 +450,7 @@ quint32 CamApi::WriteRegisterValue(const QList<strGvcpCmdWriteRegHdr>& writeUnit
 
         if (writeUnits.isEmpty()) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "No data is provided in the array to write.";
+            qDebug() << "No data is provided in the array to write.";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -586,7 +586,7 @@ quint32 CamApi::ReadMemoryBlock(const quint32 address, const quint16 size, QByte
 
     if (error == CAMERA_API_STATUS_FAILED) {
 
-        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Corrupted block. Could not fetch the file correctly.";
+        qDebug() << "Corrupted block. Could not fetch the file correctly.";
     }
 
     return error;
@@ -649,7 +649,7 @@ quint32 CamApi::ReadRegisterValue(const QList<strGvcpCmdReadRegHdr>& addressList
         /* Check to see if the address list is empty. */
         if (addressList.empty()) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Feature list is empty";
+            qDebug() << "Feature list is empty";
             error = CAMERA_API_STATUS_FAILED;
         }
     }
@@ -712,7 +712,7 @@ quint32 CamApi::DiscoverDevice(const QHostAddress& destAddr, QList<strGvcpAckDis
         /* Initialize the Host Gvcp UDP socket. */
         if (!(mGvcpSock.bind(CAMERA_GVCP_BIND_PORT))) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Could not bind socket to GVCP ip/port.";
+            qDebug() << "Could not bind socket to GVCP ip/port.";
             error =  CAMERA_API_STATUS_FAILED;
         }
     }
@@ -819,7 +819,7 @@ quint32 CamApi::StartStream() {
         /* Initialize the Host Gvcp UDP socket. */
         if (!(mGvspSock.bind(mHostIP, CAMERA_GVSP_BIND_PORT))) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Could not bind socket to GVSP ip/port.";
+            qDebug() << "Could not bind socket to GVSP ip/port.";
             error = CAMERA_API_STATUS_FAILED;
 
         } else {
@@ -910,7 +910,7 @@ quint32 CamApi::InitializeDevice(const QHostAddress& camIP) {
         /* Initialize the Host Gvcp UDP socket. */
         if (!(mGvcpSock.bind(CAMERA_GVCP_BIND_PORT))) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Could not bind socket to GVCP ip/port.";
+            qDebug() << "Could not bind socket to GVCP ip/port.";
             error =  CAMERA_API_STATUS_FAILED;
         }
     }
@@ -951,7 +951,7 @@ quint32 CamApi::InitializeDevice(const QHostAddress& camIP) {
 
     if (error == CAMERA_API_STATUS_SUCCESS) {
 
-        qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Camera initialized successfully.";
+        qInfo() << "Camera initialized successfully.";
     } else {
 
         mCamProps.statusFlags &= ~CAMERA_STATUS_FLAGS_INITIALIZED;

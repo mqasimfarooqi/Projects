@@ -8,19 +8,19 @@ bool CamEthernetInterface::camEthernetSendCmd(QUdpSocket& udpSock, QNetworkDatag
     /* Check to see if the pointer is not null. */
     if (!udpSock.isValid()) {
         error = CAMERA_ETHERNET_INTERFACE_STATUS_FAILED;
-        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Udp socket pointer is invalid.";
+        qDebug() << "Udp socket pointer is invalid.";
 
     } else if (!(datagram.data().length() > 0)) {
         error = CAMERA_ETHERNET_INTERFACE_STATUS_FAILED;
-        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "No valid data present in the datagram.";
+        qDebug() << "No valid data present in the datagram.";
 
     } else if (datagram.destinationAddress().isNull()) {
         error = CAMERA_ETHERNET_INTERFACE_STATUS_FAILED;
-        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Incorrect destination address for the datagram.";
+        qDebug() << "Incorrect destination address for the datagram.";
 
     } else if (!(datagram.destinationPort() > 0)) {
         error = CAMERA_ETHERNET_INTERFACE_STATUS_FAILED;
-        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Incorrect destination port for the datagram.";
+        qDebug() << "Incorrect destination port for the datagram.";
     }
 
     if (error == CAMERA_ETHERNET_INTERFACE_STATUS_SUCCESS) {
@@ -28,7 +28,7 @@ bool CamEthernetInterface::camEthernetSendCmd(QUdpSocket& udpSock, QNetworkDatag
         /* Write datagram to the udp socket. */
         if(!(udpSock.writeDatagram(datagram) > 0)) {
 
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Error sending datagram.";
+            qDebug() << "Error sending datagram.";
             error = CAMERA_ETHERNET_INTERFACE_STATUS_FAILED;
         }
     }
@@ -44,7 +44,7 @@ bool CamEthernetInterface::camEthernetReceiveAck(QUdpSocket& udpSock, QNetworkDa
     if (!udpSock.isValid() || !(udpSock.hasPendingDatagrams())) {
 
         error = CAMERA_ETHERNET_INTERFACE_STATUS_FAILED;
-        qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Cannot receive UDP packet either due to "
+        qDebug() << "Cannot receive UDP packet either due to "
                     "invalid pointer to udp socket or there are no pending datagrams.";
 
     } else {

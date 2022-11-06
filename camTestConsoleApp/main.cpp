@@ -1,5 +1,6 @@
 #include <QCoreApplication>
 #include "camapi.h"
+#include "logger.h"
 
 #ifdef GIT_TRACKED
 const QString gitCommitHash = GIT_COMMIT_HASH;
@@ -25,6 +26,9 @@ int main(int argc, char *argv[]) {
     strGvcpCmdWriteRegHdr writeReg;
     strGvcpCmdReadRegHdr readReg;
 
+    logger::attach();
+    logger::logging = true;
+
 #ifdef GIT_TRACKED
     qInfo() << "Git Commit Hash = " << gitCommitHash;
     qInfo() << "Git Commit Date = " << gitCommitDate;
@@ -33,7 +37,7 @@ int main(int argc, char *argv[]) {
     qInfo() << "Build Time = " << buildTime;
     qInfo() << "";
 #else
-    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << << "This project is not tracked.";
+    qDebug() << << "This project is not tracked.";
 #endif
 
     featureList.append("GevCCP");

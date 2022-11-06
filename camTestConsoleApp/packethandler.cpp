@@ -36,7 +36,7 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
         if (!error) {
             dataPtr += sizeof(strGvspDataBlockHdr);
         } else {
-            qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid generic data header received.";
+            qDebug() << "Invalid generic data header received.";
         }
 
         /* Parse extended generic header if it is preasent. */
@@ -46,7 +46,7 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
             if (!error) {
                 dataPtr += sizeof(strGvspDataBlockExtensionHdr);
             } else {
-                qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid generic data extension header received.";
+                qDebug() << "Invalid generic data extension header received.";
             }
         }
 
@@ -94,7 +94,7 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
                     HashTableCleanup(CAMERA_MAX_FRAME_BUFFER_SIZE);
 
                 } else {
-                    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid image leader header received.";
+                    qDebug() << "Invalid image leader header received.";
                 }
                 break;
             }
@@ -146,7 +146,7 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
                             emit signalRequestResend(streamHdr.blockId$flag);
 #endif
                         } else {
-                            qInfo() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Packet received completely with block ID = " << streamHdr.blockId$flag <<
+                            qInfo() << "Packet received completely with block ID = " << streamHdr.blockId$flag <<
                                        " by " << QThread::currentThread();
 
                             mLockPtr->lockForRead();
@@ -162,7 +162,7 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
                         }
                     }
                 } else {
-                    qDebug() << "(" << __FILENAME__ << ":" << __LINE__ << ")" << "Invalid image trailer header received.";
+                    qDebug() << "Invalid image trailer header received.";
                 }
                 break;
             }
