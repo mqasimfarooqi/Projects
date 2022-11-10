@@ -29,6 +29,10 @@ int main(int argc, char *argv[]) {
     logger::attach();
     logger::logging = true;
 
+    for (int i = 0; i < 110000; i++) {
+        qDebug() << "Writing to file " << i;
+    }
+
 #ifdef GIT_TRACKED
     qInfo() << "Git Commit Hash = " << gitCommitHash;
     qInfo() << "Git Commit Date = " << gitCommitDate;

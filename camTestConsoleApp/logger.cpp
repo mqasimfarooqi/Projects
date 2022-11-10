@@ -16,7 +16,9 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
     QFile file(logger::filename);
     QString fileName = strrchr(context.file, '/') ? strrchr(context.file, '/') + 1 : context.file;
     QTextStream stream(&file);
-    bool fileOpen = false;
+    bool executeBackup = false;
+    QString tempStr;
+    QFile backup(file.fileName() + "_backup");
     QString txt;
 
     if (logger::logging) {
@@ -38,22 +40,37 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
             break;
         }
 
-        if (!(logger::recordCount % MAX_LOG_ENTRIES)) {
-            if (file.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
-                fileOpen = true;
-            }
-
-        } else {
-            if (file.open(QIODevice::ReadWrite | QIODevice::Text | QIODevice::Append)) {
-                fileOpen = true;
-            }
-        }
-
-        if (fileOpen) {
+        if (file.open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text)) {
             logger::recordCount++;
             stream << "[ " << logger::recordCount << " " << QDateTime::currentDateTime().time().msecsSinceStartOfDay()
                    << " ] " << "(" << fileName << " : " << context.line << ")" << " " << txt << endl;
+            stream.flush();
+
+            if (file.size() > MAX_LOG_FILE_SIZE) {
+                if (backup.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
+                    if (stream.seek(stream.pos() - MAX_LOG_BACKUP_ENTRIES)) {
+                        backup.write((const char *)QByteArray::fromStdString(stream.read(MAX_LOG_BACKUP_ENTRIES).toStdString()).data(), MAX_LOG_BACKUP_ENTRIES);
+                        backup.flush();
+
+                        executeBackup = true;
+                    } else {
+
+                        backup.close();
+                    }
+                }
+            }
+
             file.close();
+        }
+
+        if (executeBackup) {
+            if (file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
+                backup.seek(0);
+                stream << backup.readAll();
+                file.close();
+            }
+
+            backup.close();
         }
     }
 

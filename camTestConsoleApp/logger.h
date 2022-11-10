@@ -11,7 +11,8 @@
 #include <QElapsedTimer>
 #include <QThread>
 
-#define MAX_LOG_ENTRIES (10000)
+#define MAX_LOG_FILE_SIZE (1500000)
+#define MAX_LOG_BACKUP_ENTRIES (10000)
 
 class logger : public QObject
 {
