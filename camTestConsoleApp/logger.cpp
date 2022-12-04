@@ -42,8 +42,9 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
 
         if (file.open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text)) {
             logger::recordCount++;
-            stream << "[ " << logger::recordCount << " " << QDateTime::currentDateTime().time().msecsSinceStartOfDay()
-                   << " ] " << "(" << fileName << " : " << context.line << ")" << " " << txt << endl;
+            stream << "[ " << MessageHandlerController::recordCount << " " << QDateTime::currentDateTime().time().msecsSinceStartOfDay()
+                   << " " << QDateTime::currentDateTime().toString() << " ] " << "(" << fileName << " : " << context.function
+                   << " : " << context.line << ")" << " " << msg << endl;
             stream.flush();
 
             if (file.size() > MAX_LOG_FILE_SIZE) {
