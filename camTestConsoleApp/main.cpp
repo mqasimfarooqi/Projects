@@ -29,10 +29,6 @@ int main(int argc, char *argv[]) {
     logger::attach();
     logger::logging = true;
 
-    for (int i = 0; i < 110000; i++) {
-        qDebug() << "Writing to file " << i;
-    }
-
 #ifdef GIT_TRACKED
     qInfo() << "Git Commit Hash = " << gitCommitHash;
     qInfo() << "Git Commit Date = " << gitCommitDate;
@@ -95,7 +91,7 @@ int main(int argc, char *argv[]) {
             if (QString::fromLocal8Bit((char *)discHeaders.at(iterator).modelName, 32).contains("POE-C2410C")) {
                 cheetah->InitializeDevice(QHostAddress(discHeaders.at(iterator).currentIp));
                 cheetah->StartStream();
-                //cheetah->cameraStopStream();
+                cheetah->StopStream();
                 break;
             }
         }

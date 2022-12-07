@@ -14,12 +14,15 @@ void logger::attach() {
 
 void logger::handler(QtMsgType type, const QMessageLogContext &context, const QString &msg) {
     QFile file(logger::filename);
-    QString fileName = strrchr(context.file, '/') ? strrchr(context.file, '/') + 1 : context.file;
+    QString fileName;
     QTextStream stream(&file);
     bool executeBackup = false;
-    QString tempStr;
     QFile backup(file.fileName() + "_backup");
     QString txt;
+
+    if (!strcmp(context.file, "")) {
+        fileName = strrchr(context.file, '/') ? strrchr(context.file, '/') + 1 : context.file;
+    }
 
     if (logger::logging) {
         switch (type) {
@@ -42,7 +45,7 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
 
         if (file.open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text)) {
             logger::recordCount++;
-            stream << "[ " << MessageHandlerController::recordCount << " " << QDateTime::currentDateTime().time().msecsSinceStartOfDay()
+            stream << "[ " << logger::recordCount << " " << QDateTime::currentDateTime().time().msecsSinceStartOfDay()
                    << " " << QDateTime::currentDateTime().toString() << " ] " << "(" << fileName << " : " << context.function
                    << " : " << context.line << ")" << " " << msg << endl;
             stream.flush();

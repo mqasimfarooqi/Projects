@@ -42,6 +42,10 @@ void PacketHandler::slotServicePendingPackets(QNetworkDatagram gvspPkt) {
         /* Parse extended generic header if it is preasent. */
         if (streamHdr.extId_res_pktFmt_pktID$res & GVSP_DATA_BLOCK_HDR_EI_RES_PKTFMT_PKTID_EI) {
 
+            /* NOTE: Remove after implementing extesnion header. */
+            qDebug() << "Extension header is not supported.";
+            return;
+
             error = gvspPopulateGenericDataExtensionHdrFromBigEndian(dataPtr, extHdr);
             if (!error) {
                 dataPtr += sizeof(strGvspDataBlockExtensionHdr);
