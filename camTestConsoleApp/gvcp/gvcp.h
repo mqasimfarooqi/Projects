@@ -8,8 +8,6 @@
 #include "gvcp/gvcpHeaders.h"
 #include "gigev.h"
 
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
 /* Device XML related defines. */
 #define DEVICE_MANIFEST_TABLE_ADDRESS   (0x0934)
 #define DEVICE_FIRST_URL_ADDRESS        (0X0200)

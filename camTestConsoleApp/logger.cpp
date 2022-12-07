@@ -20,8 +20,11 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
     QFile backup(file.fileName() + "_backup");
     QString txt;
 
+    /* Guarding condition that context is not null. */
     if (!strcmp(context.file, "")) {
         fileName = strrchr(context.file, '/') ? strrchr(context.file, '/') + 1 : context.file;
+    } else {
+        fileName = "";
     }
 
     if (logger::logging) {
@@ -43,6 +46,7 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
             break;
         }
 
+        /* Open log file. */
         if (file.open(QIODevice::ReadWrite | QIODevice::Append | QIODevice::Text)) {
             logger::recordCount++;
             stream << "[ " << logger::recordCount << " " << QDateTime::currentDateTime().time().msecsSinceStartOfDay()
@@ -50,9 +54,16 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
                    << " : " << context.line << ")" << " " << msg << endl;
             stream.flush();
 
+            /* Check if the log file is has increased the specified size. */
             if (file.size() > MAX_LOG_FILE_SIZE) {
+
+                /* Open a backup log file. */
                 if (backup.open(QIODevice::ReadWrite | QIODevice::Truncate | QIODevice::Text)) {
+
+                    /* Seek to cursor before a specified number of entries. */
                     if (stream.seek(stream.pos() - MAX_LOG_BACKUP_ENTRIES)) {
+
+                        /* Write into a temporary log file. */
                         backup.write((const char *)QByteArray::fromStdString(stream.read(MAX_LOG_BACKUP_ENTRIES).toStdString()).data(), MAX_LOG_BACKUP_ENTRIES);
                         backup.flush();
 
@@ -67,6 +78,7 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
             file.close();
         }
 
+        /* If backup needs to be created, truncate previous contents of log file and write backup entries. */
         if (executeBackup) {
             if (file.open(QIODevice::ReadWrite | QIODevice::Truncate)) {
                 backup.seek(0);
@@ -78,5 +90,6 @@ void logger::handler(QtMsgType type, const QMessageLogContext &context, const QS
         }
     }
 
+    /* Execute default message handler anyway. */
     (*QT_DEFAULT_MESSAGE_HANDLER)(type, context, msg);
 }

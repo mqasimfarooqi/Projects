@@ -20,9 +20,12 @@ class logger : public QObject
 public:
     explicit logger(QObject *parent = nullptr);
 
-    static quint64 recordCount;
+    /* Public variables for logging control. */
     static bool logging;
+    static quint64 recordCount;
     static QString filename;
+
+    /* Public log functions. */
     static void attach();
     static void handler(QtMsgType type, const QMessageLogContext& context, const QString& msg);
 };

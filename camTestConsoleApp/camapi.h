@@ -9,8 +9,6 @@
 #include "gvcp/gvcpHeaders.h"
 #include "packethandler.h"
 
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
 #define BIT(x) (1 << x)
 #define CAMERA_GVCP_BIND_PORT (0)
 #define CAMERA_GVSP_BIND_PORT (0)
