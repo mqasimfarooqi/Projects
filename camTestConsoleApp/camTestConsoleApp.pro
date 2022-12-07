@@ -1,4 +1,4 @@
-QT += core xml network opengl
+QT += core xml network
 
 CONFIG += c++17 console
 CONFIG -= app_bundle
