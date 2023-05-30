@@ -11,46 +11,44 @@
 #include <PcapFileDevice.h>
 
 /* Command line argument tokens. */
-#define TOKEN__INPUT_FILE_PATH "-i"
-#define TOKEN__OUTPUT_FILE_PATH "-o"
-#define TOKEN__VLAN "--vlan"
-#define TOKEN__IP_VERSION "--ip-version"
-#define TOKEN__TTL "--ttl"
-#define TOKEN__DNS_ADDR "--dns-addr"
-#define TOKEN__DNS_PORT "--dns-port"
+#define TOKEN__INPUT_FILE_PATH              "-i"
+#define TOKEN__OUTPUT_FILE_PATH             "-o"
+#define TOKEN__VLAN                         "--vlan"
+#define TOKEN__IP_VERSION                   "--ip-version"
+#define TOKEN__TTL                          "--ttl"
+#define TOKEN__DNS_ADDR                     "--dns-addr"
+#define TOKEN__DNS_PORT                     "--dns-port"
 
 /* Metadata fields macros. */
-#define MD_FIELD_INVALID (-1)
-#define MD_DROP (1 << 0)
-#define MD_DNS_MOD (1 << 1)
+#define MD_VERDICT_DROP                     (1 << 0)
+#define MD_VERDICT_DNS_MOD                  (1 << 1)
+#define MD_MSK_PASS                         (1)
+#define MD_MSK_BLOCK                        (0)
 
 /* Metadata fields ID macros. */
-#define ID_DL_PROTO (1)
-#define ID_NW_PROTO (2)
-#define ID_NW_TTL (3)
-#define ID_DL_VLAN_ID (4)
-#define ID_NW_DNS_ADDR (5)
-#define ID_NW_DNS_PORT (6)
-#define ID_TP_PROTO (7)
-
-#define MD_MSK_PASSTHROUGH (1)
-#define MD_MSK_BLOCK (0)
+#define ID_DL_PROTO                         (1)
+#define ID_NW_PROTO                         (2)
+#define ID_NW_TTL                           (3)
+#define ID_DL_VLAN_ID                       (4)
+#define ID_NW_DNS_ADDR                      (5)
+#define ID_NW_DNS_PORT                      (6)
+#define ID_TP_PROTO                         (7)
 
 /* Network protocol cli macros. */
-#define NW_PROTO_IPV4 "4"
-#define NW_PROTO_IPV6 "6"
+#define NW_PROTO_IPV4                       "4"
+#define NW_PROTO_IPV6                       "6"
 
 /* A singla instance of match action that is added in packet metadata. */
-struct pkt_match_act {
+struct mat_act_unit {
     uint8_t id;
     uint64_t mask;
     uint64_t val;
 };
 
 /* Metadata to be attached with the packet. */
-struct pkt_metadata {
-    uint8_t pkt_verdict;
-    struct pkt_match_act mat_act_pl;
+struct pkt_md {
+    uint8_t verdict;
+    struct mat_act_unit mat_act;
 };
 
 /* Create my own structe to capture the statistics of packts. */
@@ -74,49 +72,45 @@ struct pkt_stats {
 
 /* A callback + meta to be inserted into the packet processing pipeline. */
 struct pp_pl_unit {
-    void (*cb)(pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata);
-    struct pkt_metadata cb_data;
+    void (*callback)(pcpp::Packet& prsd_pkt, struct pkt_md& metadata);
+    struct pkt_md cb_data;
 };
 
 /* This struct defines the pieline in different layers of the OSI model. */
-struct layer_cb {
-    std::vector<pp_pl_unit> dl_pipeline;
-    std::vector<pp_pl_unit> nw_pipeline;
-    std::vector<pp_pl_unit> tp_pipeline;
-};
+static std::vector<pp_pl_unit> dl_pipeline;
+static std::vector<pp_pl_unit> nw_pipeline;
+static std::vector<pp_pl_unit> tp_pipeline;
 
 /* Different callbacks inserted in the packet processing pipeline. */
-void pl_proto_filter (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata);
-void pl_dec_ttl (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata);
-void pl_vlan_proc (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata);
-void pl_mod_dns (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata);
+void pl_proto_filter (pcpp::Packet& prsd_pkt, struct pkt_md& metadata);
+void pl_dec_ttl (pcpp::Packet& prsd_pkt, struct pkt_md& metadata);
+void pl_vlan_proc (pcpp::Packet& prsd_pkt, struct pkt_md& metadata);
+void pl_mod_dns (pcpp::Packet& prsd_pkt, struct pkt_md& metadata);
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]) {
     /* Declaring/Initializing local variables. */
     pcpp::RawPacket rawPacket;
     pcpp::Layer *dl_ptr = NULL;
     char in_file[25] = { 0 };
     char out_file[25] = { 0 };
-    struct pp_pl_unit pl_unit;
-    struct layer_cb pp_pipeline;
     struct pkt_stats stats = { 0 };
+    struct pp_pl_unit pl_unit;
 
     /* Add a rule to drop all the packets that are not eth packets. */
     pl_unit = { 0 };
-    pl_unit.cb = pl_proto_filter;
-    pl_unit.cb_data.mat_act_pl.id = ID_DL_PROTO;
-    pl_unit.cb_data.mat_act_pl.val = pcpp::Ethernet;
-    pl_unit.cb_data.mat_act_pl.mask = MD_MSK_PASSTHROUGH;
-    pp_pipeline.dl_pipeline.push_back(pl_unit);
+    pl_unit.callback = pl_proto_filter;
+    pl_unit.cb_data.mat_act.id = ID_DL_PROTO;
+    pl_unit.cb_data.mat_act.val = pcpp::Ethernet;
+    pl_unit.cb_data.mat_act.mask = MD_MSK_PASS;
+    dl_pipeline.push_back(pl_unit);
 
     /* Add a rule to drop all the packets that are ICMP packets. */
     pl_unit = { 0 };
-    pl_unit.cb = pl_proto_filter;
-    pl_unit.cb_data.mat_act_pl.id = ID_NW_PROTO;
-    pl_unit.cb_data.mat_act_pl.val = pcpp::ICMP;
-    pl_unit.cb_data.mat_act_pl.mask = MD_MSK_BLOCK;
-    pp_pipeline.tp_pipeline.push_back(pl_unit);
+    pl_unit.callback = pl_proto_filter;
+    pl_unit.cb_data.mat_act.id = ID_NW_PROTO;
+    pl_unit.cb_data.mat_act.val = pcpp::ICMP;
+    pl_unit.cb_data.mat_act.mask = MD_MSK_BLOCK;
+    tp_pipeline.push_back(pl_unit);
 
     /* Parsing command line arguments */
     for (int counter = 0; counter < argc; counter++) {
@@ -134,54 +128,54 @@ int main(int argc, char* argv[])
 
             /* Vlan ID filter. */
             pl_unit = { 0 };
-            pl_unit.cb = pl_vlan_proc;
-            pl_unit.cb_data.mat_act_pl.id = ID_DL_VLAN_ID;
-            pl_unit.cb_data.mat_act_pl.val = std::stoi(argv[counter + 1]);
-            pl_unit.cb_data.mat_act_pl.mask = MD_MSK_PASSTHROUGH;
-            pp_pipeline.nw_pipeline.push_back(pl_unit);
+            pl_unit.callback = pl_vlan_proc;
+            pl_unit.cb_data.mat_act.id = ID_DL_VLAN_ID;
+            pl_unit.cb_data.mat_act.val = std::stoi(argv[counter + 1]);
+            pl_unit.cb_data.mat_act.mask = MD_MSK_PASS;
+            nw_pipeline.push_back(pl_unit);
         }
         else if (!strcmp(argv[counter], TOKEN__IP_VERSION)) {
             std::cout << "IP Version value: " << argv[counter + 1] << std::endl;
 
             /* Network protocol filter. */
             pl_unit = { 0 };
-            pl_unit.cb = pl_proto_filter;
-            pl_unit.cb_data.mat_act_pl.id = ID_NW_PROTO;
-            if (!strcmp(argv[counter + 1], NW_PROTO_IPV4)) { pl_unit.cb_data.mat_act_pl.val = pcpp::IPv4; }
-            else if (!strcmp(argv[counter + 1], NW_PROTO_IPV6)) { pl_unit.cb_data.mat_act_pl.val = pcpp::IPv6; }
-            pl_unit.cb_data.mat_act_pl.mask = MD_MSK_PASSTHROUGH;
-            pp_pipeline.nw_pipeline.push_back(pl_unit);
+            pl_unit.callback = pl_proto_filter;
+            pl_unit.cb_data.mat_act.id = ID_NW_PROTO;
+            if (!strcmp(argv[counter + 1], NW_PROTO_IPV4)) { pl_unit.cb_data.mat_act.val = pcpp::IPv4; }
+            else if (!strcmp(argv[counter + 1], NW_PROTO_IPV6)) { pl_unit.cb_data.mat_act.val = pcpp::IPv6; }
+            pl_unit.cb_data.mat_act.mask = MD_MSK_PASS;
+            nw_pipeline.push_back(pl_unit);
         }
         else if (!strcmp(argv[counter], TOKEN__TTL)) {
             std::cout << "TTL value: " << argv[counter + 1] << std::endl;
 
-            /* TTL processing instance. */
+            /* TTL processing. */
             pl_unit = { 0 };
-            pl_unit.cb = pl_dec_ttl;
-            pl_unit.cb_data.mat_act_pl.id = ID_NW_TTL;
-            pl_unit.cb_data.mat_act_pl.val = std::stoi(argv[counter + 1]);
-            pp_pipeline.nw_pipeline.push_back(pl_unit);
+            pl_unit.callback = pl_dec_ttl;
+            pl_unit.cb_data.mat_act.id = ID_NW_TTL;
+            pl_unit.cb_data.mat_act.val = std::stoi(argv[counter + 1]);
+            nw_pipeline.push_back(pl_unit);
         }
         else if (!strcmp(argv[counter], TOKEN__DNS_ADDR)) {
             std::cout << "DNS Address value: " << argv[counter + 1] << std::endl;
 
-            /* DNS: Address processing. */
+            /* DNS: Address mangling. */
             pl_unit = { 0 };
-            pl_unit.cb = pl_mod_dns;
-            pl_unit.cb_data.mat_act_pl.id = ID_NW_DNS_ADDR;
+            pl_unit.callback = pl_mod_dns;
+            pl_unit.cb_data.mat_act.id = ID_NW_DNS_ADDR;
             pcpp::IPv4Address addr(argv[counter + 1]);
-            pl_unit.cb_data.mat_act_pl.val = addr.toInt();
-            pp_pipeline.tp_pipeline.push_back(pl_unit);
+            pl_unit.cb_data.mat_act.val = addr.toInt();
+            tp_pipeline.push_back(pl_unit);
         }
         else if (!strcmp(argv[counter], TOKEN__DNS_PORT)) {
             std::cout << "DNS Port value: " << argv[counter + 1] << std::endl;
 
-            /* DNS: Port processing. */
+            /* DNS: Port mangling. */
             pl_unit = { 0 };
-            pl_unit.cb = pl_mod_dns;
-            pl_unit.cb_data.mat_act_pl.id = ID_NW_DNS_PORT;
-            pl_unit.cb_data.mat_act_pl.val = std::stoi(argv[counter + 1]);
-            pp_pipeline.tp_pipeline.push_back(pl_unit);
+            pl_unit.callback = pl_mod_dns;
+            pl_unit.cb_data.mat_act.id = ID_NW_DNS_PORT;
+            pl_unit.cb_data.mat_act.val = std::stoi(argv[counter + 1]);
+            tp_pipeline.push_back(pl_unit);
         }
     }
 
@@ -206,43 +200,43 @@ int main(int argc, char* argv[])
         pcpp::Packet parsedPacket(&rawPacket);
 
         /* Data link layer processing. */
-        for (uint8_t counter = 0; counter < pp_pipeline.dl_pipeline.size(); counter++) {
+        for (uint8_t counter = 0; counter < dl_pipeline.size(); counter++) {
             pl_unit = { 0 };
-            pl_unit = pp_pipeline.dl_pipeline.at(counter);
-            pl_unit.cb(parsedPacket, pl_unit.cb_data);
+            pl_unit = dl_pipeline.at(counter);
+            pl_unit.callback(parsedPacket, pl_unit.cb_data);
 
-            if (pl_unit.cb_data.pkt_verdict & MD_DROP) {
+            if (pl_unit.cb_data.verdict & MD_VERDICT_DROP) {
                 break;
             }
         }
 
         /* Network layer processing. */
-        if (!(pl_unit.cb_data.pkt_verdict & MD_DROP)) {
-            for (uint8_t counter = 0; counter < pp_pipeline.nw_pipeline.size(); counter++) {
+        if (!(pl_unit.cb_data.verdict & MD_VERDICT_DROP)) {
+            for (uint8_t counter = 0; counter < nw_pipeline.size(); counter++) {
                 pl_unit = { 0 };
-                pl_unit = pp_pipeline.nw_pipeline.at(counter);
-                pl_unit.cb(parsedPacket, pl_unit.cb_data);
+                pl_unit = nw_pipeline.at(counter);
+                pl_unit.callback(parsedPacket, pl_unit.cb_data);
 
-                if (pl_unit.cb_data.pkt_verdict & MD_DROP) {
+                if (pl_unit.cb_data.verdict & MD_VERDICT_DROP) {
                     break;
                 }
             }
         }
 
         /* Transport layer processing. */
-        if (!(pl_unit.cb_data.pkt_verdict & MD_DROP)) {
-            for (uint8_t counter = 0; counter < pp_pipeline.tp_pipeline.size(); counter++) {
+        if (!(pl_unit.cb_data.verdict & MD_VERDICT_DROP)) {
+            for (uint8_t counter = 0; counter < tp_pipeline.size(); counter++) {
                 pl_unit = { 0 };
-                pl_unit = pp_pipeline.tp_pipeline.at(counter);
-                pl_unit.cb(parsedPacket, pl_unit.cb_data);
+                pl_unit = tp_pipeline.at(counter);
+                pl_unit.callback(parsedPacket, pl_unit.cb_data);
 
-                if (pl_unit.cb_data.pkt_verdict & MD_DROP) {
+                if (pl_unit.cb_data.verdict & MD_VERDICT_DROP) {
                     break;
                 }
             }
         }
 
-        if (!(pl_unit.cb_data.pkt_verdict & MD_DROP)) {
+        if (!(pl_unit.cb_data.verdict & MD_VERDICT_DROP)) {
 
             /* Write packet in the output pcap file. */
             pcapWriter.writePacket(*parsedPacket.getRawPacket());
@@ -254,13 +248,12 @@ int main(int argc, char* argv[])
         stats.proc_bytes += dl_ptr->getDataLen();
 
         /* If the packet was marked for drop, increase drop count. */
-        if (pl_unit.cb_data.pkt_verdict & MD_DROP) {
+        if (pl_unit.cb_data.verdict & MD_VERDICT_DROP) {
             stats.drop_pkt++;
             stats.drop_bytes += dl_ptr->getDataLen();
         } else {
-
             /* If any DNS modification is done, increase dns mod counter. */
-            if (pl_unit.cb_data.pkt_verdict & MD_DNS_MOD) {
+            if (pl_unit.cb_data.verdict & MD_VERDICT_DNS_MOD) {
                 stats.dns_mod_pkt++;
                 stats.dns_mod_pkt += dl_ptr->getDataLen();
             }
@@ -281,15 +274,13 @@ int main(int argc, char* argv[])
 }
 
 /* Callback for TTL processing. */
-void pl_dec_ttl (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
+void pl_dec_ttl (pcpp::Packet& prsd_pkt, struct pkt_md& metadata) {
     pcpp::iphdr *ipv4_hdr;
     pcpp::ip6_hdr *ipv6_hdr;
     pcpp::IPv4Layer *ipv4_layer;
     pcpp::IPv6Layer *ipv6_layer;
 
-    /* Parse ipv4 layer. */
     if (prsd_pkt.isPacketOfType(pcpp::IPv4)) {
-
         ipv4_layer = prsd_pkt.getLayerOfType<pcpp::IPv4Layer>();
 
         if (ipv4_layer != NULL) {
@@ -308,35 +299,24 @@ void pl_dec_ttl (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
                 }
             }
 
-            /* Perform processing on TTL value. */
-            if (ipv4_hdr->timeToLive <= metadata.mat_act_pl.val) {
-
-                /* Mark the packet for drop. */
-                metadata.pkt_verdict |= MD_DROP;
+            /* TTL value mangling. */
+            if (ipv4_hdr->timeToLive <= metadata.mat_act.val) {
+                metadata.verdict |= MD_VERDICT_DROP;
             } else {
-
-                /* Overwrite TTL value. */
-                ipv4_hdr->timeToLive -= metadata.mat_act_pl.val;
+                ipv4_hdr->timeToLive -= metadata.mat_act.val;
             }
         }
     } else if (prsd_pkt.isPacketOfType(pcpp::IPv6)) {
-
-        /* Parse ipv6 layer. */
         ipv6_layer = prsd_pkt.getLayerOfType<pcpp::IPv6Layer>();
 
         if (ipv6_layer != NULL) {
-
             ipv6_hdr = ipv6_layer->getIPv6Header();
 
-            /* Perform processing on hop limit value. */
-            if (ipv6_hdr->hopLimit <= metadata.mat_act_pl.val) {
-
-                /* Mark the packet for drop. */
-                metadata.pkt_verdict |= MD_DROP;
+            /* Hop value mangling. */
+            if (ipv6_hdr->hopLimit <= metadata.mat_act.val) {
+                metadata.verdict |= MD_VERDICT_DROP;
             } else {
-
-                /* Overwrite hop limit value. */
-                ipv6_hdr->hopLimit -= metadata.mat_act_pl.val;
+                ipv6_hdr->hopLimit -= metadata.mat_act.val;
             }
         }
     }
@@ -345,20 +325,17 @@ void pl_dec_ttl (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
 }
 
 /* Callback for VLAN processing. */
-void pl_vlan_proc (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
+void pl_vlan_proc (pcpp::Packet& prsd_pkt, struct pkt_md& metadata) {
     pcpp::VlanLayer *vlan_layer = NULL;
 
-    /* Get VLAN layer if there is any. */
     vlan_layer = prsd_pkt.getLayerOfType<pcpp::VlanLayer>();
-
-    /* Check to see if we got a valid VLAN layer. */
     if (vlan_layer != NULL) {
 
         /* Compare VLAN ID with the value specified by user. */
-        if ((vlan_layer->getVlanID() == metadata.mat_act_pl.val) ^ metadata.mat_act_pl.mask) {
+        if ((vlan_layer->getVlanID() == metadata.mat_act.val) ^ metadata.mat_act.mask) {
 
             /* Drop if VLAN ID does not match. */
-            metadata.pkt_verdict |= MD_DROP;
+            metadata.verdict |= MD_VERDICT_DROP;
         }
     }
 
@@ -366,29 +343,23 @@ void pl_vlan_proc (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
 }
 
 /* Callback for DNS processing. */
-void pl_mod_dns (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
+void pl_mod_dns (pcpp::Packet& prsd_pkt, struct pkt_md& metadata) {
     pcpp::DnsLayer *dns_layer = NULL;
     pcpp::IPv4Layer *ip_layer = NULL;
     pcpp::iphdr *ip_hdr = NULL;
     pcpp::udphdr *udp_hdr = NULL;
     pcpp::UdpLayer *udp_layer = NULL;
 
-    /* Parse UDP Layer if there is any. */
     udp_layer = prsd_pkt.getLayerOfType<pcpp::UdpLayer>();
     if (udp_layer != NULL) {
-
-        /* Parse DNS Layer if there is any. */
         dns_layer = prsd_pkt.getLayerOfType<pcpp::DnsLayer>();
+
         if (dns_layer != NULL) {
 
-            if (metadata.mat_act_pl.id == ID_NW_DNS_ADDR) {
-
-                /* Get IPv4 layer. */
+            if (metadata.mat_act.id == ID_NW_DNS_ADDR) {
                 ip_layer = prsd_pkt.getLayerOfType<pcpp::IPv4Layer>();
 
                 if (ip_layer != NULL) {
-
-                    /* Parse IPv4 header. */
                     ip_hdr = ip_layer->getIPv4Header();
 
                     if (ip_hdr != NULL) {
@@ -406,28 +377,24 @@ void pl_mod_dns (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
                             }
                         }
 
-                        /* Overwrite the IP. */
-                        dns_layer->getDnsHeader()->queryOrResponse ? ip_hdr->ipDst = metadata.mat_act_pl.val :
-                                                                     ip_hdr->ipSrc = metadata.mat_act_pl.val;
-
-                        /* Mark the packet as DNS modified. */
-                        metadata.pkt_verdict |= MD_DNS_MOD;
+                        /* Do IP address mangling and mark the packet as DNS modified. */
+                        dns_layer->getDnsHeader()->queryOrResponse ? ip_hdr->ipDst = metadata.mat_act.val :
+                                                                     ip_hdr->ipSrc = metadata.mat_act.val;
+                        metadata.verdict |= MD_VERDICT_DNS_MOD;
                     }
                 }
                     
-            } else if (metadata.mat_act_pl.id == ID_NW_DNS_PORT) {
+            } else if (metadata.mat_act.id == ID_NW_DNS_PORT) {
 
                 /* Parse UDP header. */
                 udp_hdr = udp_layer->getUdpHeader();
 
                 if (udp_hdr != NULL) {
 
-                    /* Over write UDP port. */
-                    (dns_layer->getDnsHeader()->queryOrResponse) ? udp_hdr->portDst = htobe16((uint16_t)metadata.mat_act_pl.val) :
-                                                                   udp_hdr->portSrc = htobe16((uint16_t)metadata.mat_act_pl.val);
-
-                    /* Mark the packet as DNS modified. */
-                    metadata.pkt_verdict |= MD_DNS_MOD;
+                    /* Do UDP port mangling and mark the packet as DNS modified. */
+                    (dns_layer->getDnsHeader()->queryOrResponse) ? udp_hdr->portDst = htobe16((uint16_t)metadata.mat_act.val) :
+                                                                   udp_hdr->portSrc = htobe16((uint16_t)metadata.mat_act.val);
+                    metadata.verdict |= MD_VERDICT_DNS_MOD;
                 }
             }
         }
@@ -437,27 +404,22 @@ void pl_mod_dns (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
 }
 
 /* Callback for protocol processing. */
-void pl_proto_filter (pcpp::Packet& prsd_pkt, struct pkt_metadata& metadata) {
+void pl_proto_filter (pcpp::Packet& prsd_pkt, struct pkt_md& metadata) {
     pcpp::Layer *tmp_layer = prsd_pkt.getFirstLayer();
 
     if (tmp_layer != NULL) {
 
         /* Filter for data link layer protocol. */
-        if (metadata.mat_act_pl.id == ID_DL_PROTO) {
-
-            if ((tmp_layer->getProtocol() == metadata.mat_act_pl.val) ^ metadata.mat_act_pl.mask) {
-
-                metadata.pkt_verdict |= MD_DROP;
+        if (metadata.mat_act.id == ID_DL_PROTO) {
+            if ((tmp_layer->getProtocol() == metadata.mat_act.val) ^ metadata.mat_act.mask) {
+                metadata.verdict |= MD_VERDICT_DROP;
             }
         }
 
         /* Filter for network layer protocol. */
-        if (metadata.mat_act_pl.id == ID_NW_PROTO) {
-
-            /* Check if packet contains the specified protocol. */
-            if (prsd_pkt.isPacketOfType(metadata.mat_act_pl.val) ^ metadata.mat_act_pl.mask) {
-
-                metadata.pkt_verdict |= MD_DROP;
+        if (metadata.mat_act.id == ID_NW_PROTO) {
+            if (prsd_pkt.isPacketOfType(metadata.mat_act.val) ^ metadata.mat_act.mask) {
+                metadata.verdict |= MD_VERDICT_DROP;
             }
         }
     }
