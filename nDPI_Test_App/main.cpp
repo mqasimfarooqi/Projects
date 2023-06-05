@@ -137,6 +137,7 @@ static void cb_on_pkt_recv (pcpp::RawPacket* packet, pcpp::PcapLiveDevice* dev, 
     pcpp::udphdr *udp_hdr = NULL;
     pcpp::iphdr *ipv4_hdr = NULL;
     std::string hash = "";
+    std::string hash_reply = "";
     struct db_ndpi_ct_info ct_entry;
     struct display_info dp_struct;
     uint8_t status = STATUS_FAIL;
@@ -152,9 +153,6 @@ static void cb_on_pkt_recv (pcpp::RawPacket* packet, pcpp::PcapLiveDevice* dev, 
         if (parsedPacket.isPacketOfType(pcpp::TCP) || parsedPacket.isPacketOfType(pcpp::UDP)) {
             status = STATUS_SUCCESS;
         }
-
-        /* Create a hash by simply ip src and dst in strings. */
-        hash = std::to_string(ipv4_hdr->ipSrc) + std::to_string(ipv4_hdr->ipDst);
     }
 
     /* Continue processing only if the packet has TCP/UDP layer. */
@@ -162,12 +160,10 @@ static void cb_on_pkt_recv (pcpp::RawPacket* packet, pcpp::PcapLiveDevice* dev, 
         tcp_layer = parsedPacket.getLayerOfType<pcpp::TcpLayer>();
         if (tcp_layer != NULL) {
             tcp_hdr = tcp_layer->getTcpHeader();
-            hash += std::to_string(tcp_hdr->portSrc) + std::to_string(tcp_hdr->portDst);
         } else {
             udp_layer = parsedPacket.getLayerOfType<pcpp::UdpLayer>();
             if (udp_layer != NULL) {
                 udp_hdr = udp_layer->getUdpHeader();
-                hash += std::to_string(udp_hdr->portSrc) + std::to_string(udp_hdr->portDst);
             } else {
                 /* If the packet does not contain TCP or UDP layers then dont pass it through nDPI. */
                 status = STATUS_FAIL;
@@ -177,6 +173,23 @@ static void cb_on_pkt_recv (pcpp::RawPacket* packet, pcpp::PcapLiveDevice* dev, 
 
     /* Enter this block only if the packet contains TCP/UDP layer. */
     if (status == STATUS_SUCCESS) {
+        /* Create a hash by simply ip src and dst in strings. */
+        hash = std::to_string(ipv4_hdr->ipSrc) + std::to_string(ipv4_hdr->ipDst);
+        tcp_layer != NULL ? hash += std::to_string(tcp_hdr->portSrc) + std::to_string(tcp_hdr->portDst) :
+                            hash += std::to_string(udp_hdr->portSrc) + std::to_string(udp_hdr->portDst);
+
+        if (ndpi->map_ndpi.find(hash) == ndpi->map_ndpi.end()) {
+            /* Check to see if it is a reply. */
+            hash_reply = std::to_string(ipv4_hdr->ipDst) + std::to_string(ipv4_hdr->ipSrc);
+            tcp_layer != NULL ? hash_reply += std::to_string(tcp_hdr->portDst) + std::to_string(tcp_hdr->portSrc):
+                                hash_reply += std::to_string(udp_hdr->portDst) + std::to_string(udp_hdr->portSrc);
+
+            /* Set hash equal to reply hash and move forward with DPI processing. */
+            if (ndpi->map_ndpi.find(hash_reply) != ndpi->map_ndpi.end()) {
+                hash = hash_reply;
+            }
+        }
+
         itr = ndpi->map_ndpi.find(hash);
         if (itr == ndpi->map_ndpi.end()) {
             /* An existing entry in hash table for this connection is not found, so,
@@ -250,6 +263,9 @@ static void cb_sig_term (int sig) {
             std::cout << glb_display_hash_map.at(ctr).proto << ",";
             std::cout << glb_display_hash_map.at(ctr).ctg << ",";
             std::cout << glb_display_hash_map.at(ctr).domain << std::endl;
+        }
+        if ((itr == glb_display_hash_map.end()) && (ctr < glb_display_hash_map.size())) {
+            std::cout << ctr << "," << "nDPI verdict not established" << std::endl;
         }
     }
     exit (sig);
