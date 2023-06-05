@@ -73,6 +73,9 @@ int main(int argc, char* argv[]) {
         if (!strcmp(argv[counter], TOKEN__MAX_PKTS)) {
             std::cout << "Max packets: " << argv[counter + 1] << std::endl;
             ndpi.max_pkts =  std::stoi(argv[counter + 1]);
+            if (ndpi.max_pkts <= 0) {
+                std::cout << "Max packets defaulting to 1." << std::endl;
+            }
         }
     }
 
@@ -91,19 +94,21 @@ int main(int argc, char* argv[]) {
     }
 
     /* NDPI initializaion. */
-    ndpi.ndpi_det = ndpi_init_detection_module(ndpi_no_prefs);
-    if (ndpi.ndpi_det != NULL) {
-        NDPI_PROTOCOL_BITMASK all;
-        NDPI_BITMASK_SET_ALL(all);
-        if (ndpi_set_protocol_detection_bitmask2(ndpi.ndpi_det, &all) != STATUS_SUCCESS) {
-            std::cout << "Unable to set protocol bitmask." << std::endl;
-            status = STATUS_FAIL;
+    if (status == STATUS_SUCCESS) {
+        ndpi.ndpi_det = ndpi_init_detection_module(ndpi_no_prefs);
+        if (ndpi.ndpi_det != NULL) {
+            NDPI_PROTOCOL_BITMASK all;
+            NDPI_BITMASK_SET_ALL(all);
+            if (ndpi_set_protocol_detection_bitmask2(ndpi.ndpi_det, &all) != STATUS_SUCCESS) {
+                std::cout << "Unable to set protocol bitmask." << std::endl;
+                status = STATUS_FAIL;
+            } else {
+                ndpi_finalize_initialization(ndpi.ndpi_det);
+            }
         } else {
-            ndpi_finalize_initialization(ndpi.ndpi_det);
+            status = STATUS_FAIL;
+            std::cout << "Unable to initialize nDPI." << std::endl;
         }
-    } else {
-        status = STATUS_FAIL;
-        std::cout << "Unable to initialize nDPI." << std::endl;
     }
 
     if (status == STATUS_SUCCESS) {
