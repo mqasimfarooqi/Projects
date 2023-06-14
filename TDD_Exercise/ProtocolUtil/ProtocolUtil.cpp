@@ -6,10 +6,10 @@
 
 Protocol ProtocolUtil::detect (pcpp::Packet &packet) {
     if (packet.isPacketOfType(pcpp::TCP)) {
-        return TCP4;
+        return Protocol::TCP4;
     } else if (packet.isPacketOfType(pcpp::UDP)) {
-        return UDP4;
+        return Protocol::UDP4;
     } else {
-        return UNKNOWN;
+        return Protocol::UNKNOWN;
     }
 }

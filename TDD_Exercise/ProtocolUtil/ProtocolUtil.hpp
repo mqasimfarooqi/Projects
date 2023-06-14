@@ -6,7 +6,7 @@
 
 class ProtocolUtil {
     private:
-    ProtocolUtil();
+    ProtocolUtil() {};
     public:
     static Protocol detect(pcpp::Packet &packet);
 };

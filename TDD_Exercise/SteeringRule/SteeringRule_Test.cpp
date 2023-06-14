@@ -10,13 +10,13 @@ using namespace std;
 class SteeringRuleTest : public ::testing::Test {
 protected:
     pcpp::Packet packet;
-    Protocol protocol;
+    Protocol protocol = Protocol::TCP4;
     uint16_t port;
     pcpp::IPv4Address address;
 
     void SetUp() override {
         address = pcpp::IPv4Address("192.168.0.1");
-        protocol = TCP4;
+        protocol = Protocol::TCP4;
         port = 8080;
         packet.addLayer(new pcpp::EthLayer(MAC_SRC_DUMMY, MAC_DST_DUMMY, pcpp::Ethernet), true);
         packet.addLayer(new pcpp::IPv4Layer(IP_SRC_DUMMY, address), true);

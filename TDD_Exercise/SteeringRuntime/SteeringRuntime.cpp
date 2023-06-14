@@ -11,7 +11,7 @@
 using namespace std;
 
 bool SteeringRuntime::addRule(Protocol protocol, uint16_t port, pcpp::IPv4Address address, SteeringTarget target) {
-    if (protocol != TCP4 && protocol != UDP4) {
+    if (protocol._value != Protocol::TCP4 && protocol._value != Protocol::UDP4) {
         throw InvalidProtocolException();
     }
 
@@ -36,7 +36,7 @@ bool SteeringRuntime::addRule(Protocol protocol, uint16_t port, SteeringTarget t
 
 bool SteeringRuntime::removeRule(Protocol protocol, uint16_t port, pcpp::IPv4Address address) {
     SteeringTarget target(address, port);
-    if (protocol != TCP4 && protocol != UDP4) {
+    if (protocol._value != Protocol::TCP4 && protocol._value != Protocol::UDP4) {
         throw InvalidProtocolException();
     }
 
@@ -51,7 +51,7 @@ bool SteeringRuntime::removeRule(Protocol protocol, uint16_t port, pcpp::IPv4Add
 }
 
 std::shared_ptr<const SteeringRule> SteeringRuntime::ruleSearch(pcpp::Packet& packet) {
-    if (!packet.isPacketOfType(TCP4) && !packet.isPacketOfType(UDP4)) {
+    if (!packet.isPacketOfType(Protocol::TCP4) && !packet.isPacketOfType(Protocol::UDP4)) {
         throw InvalidProtocolException();
     }
     

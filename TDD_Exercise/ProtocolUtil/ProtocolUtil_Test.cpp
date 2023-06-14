@@ -8,13 +8,13 @@
 class ProtocolUtilTest : public ::testing::Test {
 protected:
     pcpp::Packet packet;
-    Protocol protocol;
+    Protocol protocol = Protocol::TCP4;
     uint16_t port;
     pcpp::IPv4Address address;
 
     void SetUp() override {
         address = pcpp::IPv4Address("192.168.0.1");
-        protocol = TCP4;
+        protocol = Protocol::TCP4;
         port = 8080;
         packet.addLayer(new pcpp::EthLayer(MAC_SRC_DUMMY, MAC_DST_DUMMY, pcpp::Ethernet), true);
         packet.addLayer(new pcpp::IPv4Layer(IP_SRC_DUMMY, address), true);
@@ -27,18 +27,18 @@ protected:
 };
 
 TEST_F(ProtocolUtilTest, TCPTest) {
-  EXPECT_EQ(ProtocolUtil::detect(packet), TCP4);
+  EXPECT_EQ(ProtocolUtil::detect(packet)._value, Protocol::TCP4);
 }
 
 TEST_F(ProtocolUtilTest, UDPTest) {
   packet.removeLastLayer();
   packet.addLayer(new pcpp::UdpLayer(PORT_SRC_DUMMY, port), true);
-  EXPECT_EQ(ProtocolUtil::detect(packet), UDP4);
+  EXPECT_EQ(ProtocolUtil::detect(packet)._value, Protocol::UDP4);
 }
 
 TEST_F(ProtocolUtilTest, UnknownTest) {
   packet.removeLastLayer();
-  EXPECT_EQ(ProtocolUtil::detect(packet), UNKNOWN);
+  EXPECT_EQ(ProtocolUtil::detect(packet)._value, Protocol::UNKNOWN);
 }
 
 int main(int argc, char **argv) {
