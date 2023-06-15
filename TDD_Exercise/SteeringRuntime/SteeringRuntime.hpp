@@ -8,6 +8,8 @@
 #include <unordered_map>
 #include <memory>
 #include <iostream>
+#include "oneapi/tbb.h"
+#include "oneapi/tbb/concurrent_hash_map.h"
 #include "../SteeringRule/SteeringRule.hpp"
 #include "../SteeringTarget/SteeringTarget.hpp"
 #include "../Generic/Generic.hpp"
@@ -31,10 +33,12 @@ public:
     virtual std::shared_ptr<const SteeringRule> ruleSearch(pcpp::Packet& packet);
 
 private:
-    std::unordered_map<std::string, std::shared_ptr<SteeringRule>> m_rules;
+    oneapi::tbb::concurrent_hash_map<std::string, std::shared_ptr<SteeringRule>> m_rules;
+
     std::string generateRuleId(Protocol protocol, uint16_t port, pcpp::IPv4Address address) {
         return std::to_string(protocol) + std::to_string(port) + address.toString();
     }
+
     bool packetMatchesRule(pcpp::Packet& packet, const SteeringRule& rule) {
         if (packet.isPacketOfType(rule.getProtocol())) {
             if (packet.isPacketOfType(pcpp::TCP)) {

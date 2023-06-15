@@ -21,8 +21,10 @@ bool SteeringRuntime::addRule(Protocol protocol, uint16_t port, pcpp::IPv4Addres
     }
 
     std::shared_ptr<SteeringRule> rule = std::make_shared<SteeringRule>(protocol, target, port, address);
-    m_rules[ruleId] = rule;
-
+    oneapi::tbb::concurrent_hash_map<std::string, std::shared_ptr<SteeringRule>>::accessor acc;
+    m_rules.insert(acc, ruleId);
+    acc->second = rule;
+    
     return true;
 }
 

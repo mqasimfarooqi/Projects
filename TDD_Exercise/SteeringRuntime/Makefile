@@ -14,6 +14,7 @@ OBJS = $(SRCS:.cpp=.o)
 EXEC = SteeringRuntime
 
 # Google Test libraries
+TBB_LIBS = $(LIBS_DIR)/libtbb_debug.so $(LIBS_DIR)/libtbbmalloc_debug.so $(LIBS_DIR)/libtbbmalloc_proxy_debug.so
 GMOCK_LIBS = $(LIBS_DIR)/libgmock.a $(LIBS_DIR)/libgmock_main.a
 GTEST_LIB = $(LIBS_DIR)/libgtest.a
 GTEST_MAIN_LIB = $(LIBS_DIR)/libgtest_main.a
@@ -29,7 +30,7 @@ INC_DIRS = -I/usr/local/include/pcapplusplus -I/usr/local/include/gtest -I/usr/l
 all: $(EXEC)
 
 $(EXEC): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(GTEST_LIB) $(GMOCK_LIBS) $(PACKET_LIB) $(PCAP_LIB) $(COMMON_LIB) $(GTEST_MAIN_LIB) -o $(EXEC)
+	$(CC) $(CFLAGS) $(LDFLAGS) $(OBJS) $(GTEST_LIB) $(GMOCK_LIBS) $(TBB_LIBS) $(PACKET_LIB) $(PCAP_LIB) $(COMMON_LIB) $(GTEST_MAIN_LIB) -o $(EXEC)
 
 %.o: %.cpp
 	$(CC) $(CFLAGS) $(INC_DIRS) -c $< -o $@
