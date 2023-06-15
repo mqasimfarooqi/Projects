@@ -14,7 +14,7 @@ bool SteeringWorker::process(pcpp::Packet &packet) {
     }
     
     if (rule != nullptr) {
-        if (rule->getProtocol() == TCP4) {
+        if (rule->getProtocol()._value == Protocol::TCP4) {
             packet.getLayerOfType<pcpp::TcpLayer>()->getTcpHeader()->portDst = htobe16(rule->getTarget().getPort());
         } else {
             packet.getLayerOfType<pcpp::UdpLayer>()->getUdpHeader()->portDst = htobe16(rule->getTarget().getPort());
@@ -27,7 +27,7 @@ bool SteeringWorker::process(pcpp::Packet &packet) {
 }
 
 void SteeringWorker::steer(pcpp::Packet &packet, SteeringTarget &target) {
-    if (!packet.isPacketOfType(TCP4) && !packet.isPacketOfType(UDP4)) {
+    if (!packet.isPacketOfType(Protocol::TCP4) && !packet.isPacketOfType(Protocol::UDP4)) {
         throw InvalidProtocolException();
     }
 
@@ -38,7 +38,7 @@ void SteeringWorker::steer(pcpp::Packet &packet, SteeringTarget &target) {
     }
 
     if (target.getPort() != 0) {
-        if (packet.isPacketOfType(TCP4)) {
+        if (packet.isPacketOfType(Protocol::TCP4)) {
             packet.getLayerOfType<pcpp::TcpLayer>()->getTcpHeader()->portDst = htobe16(target.getPort());
         } else {
             packet.getLayerOfType<pcpp::UdpLayer>()->getUdpHeader()->portDst = htobe16(target.getPort());

@@ -42,7 +42,7 @@ TEST_F(SteeringRuntimeTest, AddRule_ValidRule) {
 
 TEST_F(SteeringRuntimeTest, AddRule_InvalidProtocol) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.20"), 9090);
-    Protocol invalidProtocol = static_cast<Protocol>(100);
+    Protocol invalidProtocol = Protocol::_enumerated(100);
 
     EXPECT_THROW(steeringRuntime.addRule(invalidProtocol, 80, steeringTarget), InvalidProtocolException);
     EXPECT_EQ(steeringRuntime.ruleCount(), 0);

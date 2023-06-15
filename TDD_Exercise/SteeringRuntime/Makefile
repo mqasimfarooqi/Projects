@@ -14,7 +14,7 @@ OBJS = $(SRCS:.cpp=.o)
 EXEC = SteeringRuntime
 
 # Google Test libraries
-GMOCK_LIBS = $(LIBS_DIR)/lib/libgmock.a $(LIBS_DIR)/lib/libgmock_main.a
+GMOCK_LIBS = $(LIBS_DIR)/libgmock.a $(LIBS_DIR)/libgmock_main.a
 GTEST_LIB = $(LIBS_DIR)/libgtest.a
 GTEST_MAIN_LIB = $(LIBS_DIR)/libgtest_main.a
 
