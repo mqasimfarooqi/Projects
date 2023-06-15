@@ -35,7 +35,7 @@ void SteeringTarget::setPort(uint16_t port) {
     }
 }
 
-bool SteeringTarget::operator==(const SteeringTarget& obj) {
+bool SteeringTarget::operator==(const SteeringTarget& obj) const {
     if ((obj.getAddress() == m_addr) && (obj.getPort() == m_port))
         return true;
     else

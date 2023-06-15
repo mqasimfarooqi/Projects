@@ -13,14 +13,6 @@
 
 BETTER_ENUM(Protocol, int, TCP4 = 0x08, TCP6, UDP4 = 0x10, UDP6, UNKNOWN = 0x00)
 
-// enum Protocol {
-//     TCP4 = 0x08,
-//     TCP6,
-//     UDP4 = 0x10,
-//     UDP6,
-//     UNKNOWN = 0x00
-// };
-
 class DropPacketException : public std::exception {
 public:
     explicit DropPacketException() {}

@@ -11,12 +11,12 @@ using namespace std;
 class SteeringRuntimeMock : public SteeringRuntime {
     public:
     MOCK_METHOD(std::shared_ptr<const SteeringRule>, ruleSearch, (pcpp::Packet& packet), (override));
+    MOCK_METHOD(bool, addRule, (Protocol protocol, uint16_t port, pcpp::IPv4Address address, SteeringTarget target), (override));
 };
 
 class SteeringWorkerTest : public ::testing::Test {
 protected:
     SteeringRuntimeMock steeringRuntimeMock;
-    SteeringRuntime steeringRuntime;
     pcpp::Packet packet;
     Protocol protocol = Protocol::TCP4;
     uint16_t port;
@@ -38,6 +38,9 @@ protected:
 TEST_F(SteeringWorkerTest, Process_CalledRuleSearch) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
 
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+
     steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
     SteeringWorker steeringWorker(steeringRuntimeMock);
 
@@ -48,27 +51,39 @@ TEST_F(SteeringWorkerTest, Process_CalledRuleSearch) {
 }
 
 TEST_F(SteeringWorkerTest, Process_ValidPacketMatch) {
-    SteeringRuntimeMock steeringRuntimeMock;
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
 
-    steeringRuntime.addRule(protocol, port, address, steeringTarget);
-    SteeringWorker steeringWorker(steeringRuntime);
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+    steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
+
+    SteeringWorker steeringWorker(steeringRuntimeMock);
+
+    EXPECT_CALL(steeringRuntimeMock, ruleSearch(::testing::Ref(packet)))
+    .WillOnce(::testing::Return(std::shared_ptr<const SteeringRule>(new SteeringRule(protocol, steeringTarget, port, address))));
     EXPECT_TRUE(steeringWorker.process(packet));
 }
 
 TEST_F(SteeringWorkerTest, Process_InvalidPacket) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
-    steeringRuntime.addRule(protocol, port, address, steeringTarget);
-    SteeringWorker steeringWorker(steeringRuntime);
+
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+    steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
+    SteeringWorker steeringWorker(steeringRuntimeMock);
     
     packet.removeLastLayer();
+    EXPECT_CALL(steeringRuntimeMock, ruleSearch(::testing::Ref(packet)))
+    .WillOnce(::testing::Throw(DropPacketException()));
     ASSERT_THROW(steeringWorker.process(packet), DropPacketException);
 }
 
 TEST_F(SteeringWorkerTest, Steer_InvalidPacket) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
-    steeringRuntime.addRule(protocol, port, address, steeringTarget);
-    SteeringWorker steeringWorker(steeringRuntime);
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+    steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
+    SteeringWorker steeringWorker(steeringRuntimeMock);
     
     packet.removeLastLayer();
     ASSERT_THROW(steeringWorker.steer(packet, steeringTarget), InvalidProtocolException);
@@ -76,8 +91,10 @@ TEST_F(SteeringWorkerTest, Steer_InvalidPacket) {
 
 TEST_F(SteeringWorkerTest, Steer_TCPPortMangle) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
-    steeringRuntime.addRule(protocol, port, address, steeringTarget);
-    SteeringWorker steeringWorker(steeringRuntime);
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+    steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
+    SteeringWorker steeringWorker(steeringRuntimeMock);
 
     steeringWorker.steer(packet, steeringTarget);
     EXPECT_EQ(packet.getLayerOfType<pcpp::TcpLayer>()->getTcpHeader()->portDst, htobe16(steeringTarget.getPort()));
@@ -85,8 +102,10 @@ TEST_F(SteeringWorkerTest, Steer_TCPPortMangle) {
 
 TEST_F(SteeringWorkerTest, Steer_IPMangle) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
-    steeringRuntime.addRule(protocol, port, address, steeringTarget);
-    SteeringWorker steeringWorker(steeringRuntime);
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+    steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
+    SteeringWorker steeringWorker(steeringRuntimeMock);
 
     steeringWorker.steer(packet, steeringTarget);
     EXPECT_EQ(packet.getLayerOfType<pcpp::IPv4Layer>()->getIPv4Header()->ipDst, steeringTarget.getAddress().toInt());
@@ -94,8 +113,10 @@ TEST_F(SteeringWorkerTest, Steer_IPMangle) {
 
 TEST_F(SteeringWorkerTest, Steer_UDPPortMangle) {
     SteeringTarget steeringTarget(pcpp::IPv4Address("172.19.17.10"), 9090);
-    steeringRuntime.addRule(protocol, port, address, steeringTarget);
-    SteeringWorker steeringWorker(steeringRuntime);
+    EXPECT_CALL(steeringRuntimeMock, addRule(protocol, port, address, steeringTarget))
+    .WillOnce(::testing::Return(true));
+    steeringRuntimeMock.addRule(protocol, port, address, steeringTarget);
+    SteeringWorker steeringWorker(steeringRuntimeMock);
 
     packet.removeLastLayer();
     packet.addLayer(new pcpp::UdpLayer(44444, port), true);

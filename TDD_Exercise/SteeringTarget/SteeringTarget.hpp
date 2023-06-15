@@ -19,7 +19,7 @@ class SteeringTarget {
     uint16_t getPort() const;
 
     /* Operator overloading. */
-    bool operator==(const SteeringTarget& obj);
+    bool operator==(const SteeringTarget& obj) const;
 
     private:
     pcpp::IPv4Address m_addr;

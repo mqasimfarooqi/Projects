@@ -21,7 +21,7 @@ public:
 
     bool addRule(Protocol protocol, SteeringTarget target);
     bool addRule(Protocol protocol, uint16_t port, SteeringTarget target);
-    bool addRule(Protocol protocol, uint16_t port, pcpp::IPv4Address address, SteeringTarget target);
+    virtual bool addRule(Protocol protocol, uint16_t port, pcpp::IPv4Address address, SteeringTarget target);
 
     bool removeRule(Protocol protocol);
     bool removeRule(Protocol protocol, uint16_t port);
