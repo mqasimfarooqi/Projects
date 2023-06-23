@@ -1,0 +1,92 @@
+{
+    "entryPointRuleChainNames": [
+        "INPUT-TRAFFIC-CHAIN"
+    ],
+    "expressions": [
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "name": "NETWORK-CATEGORY-TRAFFIC",
+            "operation": "EQUALS",
+            "property": "connection.dpi.ndpi.category",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::StringOperand",
+                    "value": "chat"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DpiStatusExpConfig",
+            "name": "DPI-COMPLETED",
+            "operation": "EQUALS",
+            "property": "connection.dpi.status",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::DpiStatusOperand",
+                    "status": "PROTOCOL_DETECTED"
+                },
+                {
+                    "__type": "ag::core::rule_engine::DpiStatusOperand",
+                    "status": "COMPLETED"
+                }
+            ]
+        }
+    ],
+    "ruleChains": [
+        {
+            "name": "INPUT-TRAFFIC-CHAIN",
+            "rules": [
+                {
+                    "name": "DPI-RULE",
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "CATEGORY-CHAIN"
+                                },
+                                "type": "CALL_CHAIN"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "DROP"
+                            }
+                        ]
+                    },
+                    "expressionName": "DPI-COMPLETED"
+                }
+            ]
+        },
+        {
+            "name": "CATEGORY-CHAIN",
+            "rules": [
+                {
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "MARK_DSCP",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::DscpRuleActionParamsConfig",
+                                    "direction": "ALL",
+                                    "dscp": "DSCP_2"
+                                }
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "MARK_DSCP",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::DscpRuleActionParamsConfig",
+                                    "direction": "ALL",
+                                    "dscp": "DSCP_1"
+                                }
+                            }
+                        ]
+                    },
+                    "expressionName": "NETWORK-CATEGORY-TRAFFIC"
+                }
+            ]
+        }
+    ]
+}

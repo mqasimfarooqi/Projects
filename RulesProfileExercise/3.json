@@ -1,0 +1,110 @@
+{
+    "entryPointRuleChainNames": [
+        "INPUT-TRAFFIC-CHAIN"
+    ],
+    "expressions": [
+        {
+            "__type": "ag::core::rule_engine::OrLogicalExpConfig",
+            "name": "WHITELIST",
+            "expressions": [
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+                    "name": "IP-WHITELIST",
+                    "operation": "IN",
+                    "property": "connection.ip.srcAddress",
+                    "values": [
+                        {
+                            "__type": "ag::core::rule_engine::Ipv4AddressListOperand",
+                            "addresses": [
+                                "178.236.7.18",
+                                "172.65.64.50",
+                                "17.86.254.172"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "__type": "ag::core::rule_engine::StringExpConfig",
+                    "operation": "IN",
+                    "name": "DOMAIN-WHITELIST",
+                    "property": "connection.domain",
+                    "values": [
+                        {
+                            "__type": "ag::core::rule_engine::StringListOperand",
+                            "values": [
+                                "google.com",
+                                "facebook.com",
+                                "apple.com"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::OrLogicalExpConfig",
+            "name": "DNS-EXP",
+            "expressions": [
+                {
+                    "__type": "ag::core::rule_engine::PacketTypeExpConfig",
+                    "name": "DNS-PACKET",
+                    "operation": "EQUALS",
+                    "values": [
+                        {
+                            "__type": "ag::core::rule_engine::PacketTypeOperand",
+                            "packetType": "DNS"
+                        }
+                    ],
+                    "property": "packet.type"
+                }
+            ]
+        }
+    ],
+    "ruleChains": [
+        {
+            "name": "INPUT-TRAFFIC-CHAIN",
+            "rules": [
+                {
+                    "name": "TCP-RULE",
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "DNS-CHAIN"
+                                },
+                                "type": "CALL_CHAIN"
+                            }
+                        ]
+                    },
+                    "expressionName": "WHITELIST"
+                }
+            ]
+        },
+        {
+            "name": "DNS-CHAIN",
+            "rules": [
+                {
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "DROP"
+                            }
+                        ]
+                    },
+                    "expressionName": "DNS-EXP"
+                }
+            ]
+        }
+    ]
+}

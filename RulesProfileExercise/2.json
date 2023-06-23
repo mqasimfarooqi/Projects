@@ -1,0 +1,63 @@
+{
+    "entryPointRuleChainNames": [
+        "INPUT-TRAFFIC-CHAIN"
+    ],
+    "expressions": [
+        {
+            "__type": "ag::core::rule_engine::AndLogicalExpConfig",
+            "name": "TCP-PORTS",
+            "expressions": [
+                {
+                    "__type": "ag::core::rule_engine::ConnectionTypeExpConfig",
+                    "name": "CONNECTION-TYPE-TCP",
+                    "operation": "EQUALS",
+                    "values": [
+                        {
+                            "__type": "ag::core::rule_engine::ConnectionTypeOperand",
+                            "connectionType": "TCP4"
+                        }
+                    ],
+                    "property": "connection.type"
+                },
+                {
+                    "__type": "ag::core::rule_engine::TcpPortExpConfig",
+                    "name": "ALLOWED-PORTS",
+                    "operation": "EQUALS",
+                    "property": "connection.tcp.dstPort",
+                    "values": [
+                        {
+                            "__type": "ag::core::rule_engine::TcpPortListOperand",
+                            "ports": [
+                                "80",
+                                "443"
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "ruleChains": [
+        {
+            "name": "INPUT-TRAFFIC-CHAIN",
+            "rules": [
+                {
+                    "name": "TCP-RULE",
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "DROP"
+                            }
+                        ]
+                    },
+                    "expressionName": "TCP-PORTS"
+                }
+            ]
+        }
+    ]
+}

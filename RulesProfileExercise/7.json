@@ -1,0 +1,80 @@
+{
+    "entryPointRuleChainNames": [
+        "INPUT-TRAFFIC-CHAIN"
+    ],
+    "expressions": [
+        {
+            "__type": "ag::core::rule_engine::UserSessionStateExpConfig",
+            "name": "STATE-SESSION",
+            "operation": "EQUALS",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UserSessionStateOperand",
+                    "state": "ACTIVE"
+                }
+            ],
+            "property": "connection.userSession.state"
+        },
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "operation": "EQUALS",
+            "name": "LOGON-EXP",
+            "property": "connection.domain",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::StringListOperand",
+                    "values": [
+                        "login.com"
+                    ]
+                }
+            ]
+        }
+    ],
+    "ruleChains": [
+        {
+            "name": "INPUT-TRAFFIC-CHAIN",
+            "rules": [
+                {
+                    "expressionName": "STATE-SESSION",
+                    "name": "TCP-RULE",
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "LOGON-CHAIN"
+                                },
+                                "type": "CALL_CHAIN"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "LOGON-CHAIN",
+            "rules": [
+                {
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "DROP"
+                            }
+                        ]
+                    },
+                    "expressionName": "LOGON-EXP"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,42 @@
+{
+    "entryPointRuleChainNames": [
+        "INPUT-TRAFFIC-CHAIN"
+    ],
+    "expressions": [
+        {
+            "__type": "ag::core::rule_engine::ConnectionTypeExpConfig",
+            "name": "CONNECTION-TYPE-TCP",
+            "operation": "EQUALS",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::ConnectionTypeOperand",
+                    "connectionType": "TCP4"
+                }
+            ],
+            "property": "connection.type"
+        }
+    ],
+    "ruleChains": [
+        {
+            "name": "INPUT-TRAFFIC-CHAIN",
+            "rules": [
+                {
+                    "expressionName": "CONNECTION-TYPE-TCP",
+                    "name": "TCP-RULE",
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "DROP"
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ]
+}
