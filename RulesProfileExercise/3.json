@@ -9,9 +9,25 @@
             "expressions": [
                 {
                     "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
-                    "name": "IP-WHITELIST",
+                    "name": "IP-SRC-WHITELIST",
                     "operation": "IN",
                     "property": "connection.ip.srcAddress",
+                    "values": [
+                        {
+                            "__type": "ag::core::rule_engine::Ipv4AddressListOperand",
+                            "addresses": [
+                                "178.236.7.18",
+                                "172.65.64.50",
+                                "17.86.254.172"
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+                    "name": "IP-DST-WHITELIST",
+                    "operation": "IN",
+                    "property": "connection.ip.dstAddress",
                     "values": [
                         {
                             "__type": "ag::core::rule_engine::Ipv4AddressListOperand",
@@ -42,22 +58,16 @@
             ]
         },
         {
-            "__type": "ag::core::rule_engine::OrLogicalExpConfig",
+            "__type": "ag::core::rule_engine::PacketTypeExpConfig",
             "name": "DNS-EXP",
-            "expressions": [
+            "operation": "EQUALS",
+            "values": [
                 {
-                    "__type": "ag::core::rule_engine::PacketTypeExpConfig",
-                    "name": "DNS-PACKET",
-                    "operation": "EQUALS",
-                    "values": [
-                        {
-                            "__type": "ag::core::rule_engine::PacketTypeOperand",
-                            "packetType": "DNS"
-                        }
-                    ],
-                    "property": "packet.type"
+                    "__type": "ag::core::rule_engine::PacketTypeOperand",
+                    "packetType": "DNS"
                 }
-            ]
+            ],
+            "property": "packet.type"
         }
     ],
     "ruleChains": [
