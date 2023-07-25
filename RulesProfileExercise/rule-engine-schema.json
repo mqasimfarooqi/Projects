@@ -10,6 +10,7 @@
         ],
         "entryPointRuleChainNames": {
             "description": "Array containing entry point rule chain names",
+            "uniqueItems": true,
             "type": "array"
         },
         "expressions": {
@@ -22,7 +23,8 @@
                     "name",
                     "operation",
                     "values",
-                    "property"
+                    "property",
+                    "negate"
                 ],
                 "properties": {
                     "__type": {
@@ -43,18 +45,33 @@
                         "type": "array",
                         "items": {
                             "type": "object",
-                            "__type": {
-                                "description": "Type of operand",
-                                "type": "string"
-                            },
                             "required": [
                                 "__type"
+                            ],
+                            "oneOf": [
+                                {
+                                    "required": [
+                                        "__type",
+                                        "connectionType"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "description": "Type of operand",
+                                            "type": "string"
+                                        },
+                                        "connectionType": {
+                                            "description": "Type of connection",
+                                            "enum": [ "TCP4", "UDP4" ],
+                                            "type": "string"
+                                        }
+                                    }
+                                }
                             ]
                         }
                     },
                     "negate": {
                         "description": "Invert the result",
-                        "type": "integer"
+                        "type": "boolean"
                     },
                     "property": {
                         "description": "Property of values/operands array",

@@ -14,7 +14,8 @@
                     "connectionType": "TCP4"
                 }
             ],
-            "property": "connection.type"
+            "property": "connection.type",
+            "negate": false
         },
         {
             "__type": "ag::core::rule_engine::ConnectionTypeExpConfig",
@@ -30,6 +31,7 @@
                     "connectionType": "TCP4"
                 }
             ],
+            "negate": false,
             "property": "connection.type"
         }
     ],
