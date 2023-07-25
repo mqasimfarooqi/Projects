@@ -1,0 +1,67 @@
+{
+    "title": "Rule Engine Config Schema",
+    "description": "This schema is used to validate a rules profile to be used in the AG",
+    "type": "object",
+    "properties": {
+        "required": [
+            "entryPointRuleChainNames",
+            "expressions",
+            "ruleChains"
+        ],
+        "entryPointRuleChainNames": {
+            "description": "Array containing entry point rule chain names",
+            "type": "array"
+        },
+        "expressions": {
+            "description": "Array of expressions",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "__type",
+                    "name",
+                    "operation",
+                    "values",
+                    "property"
+                ],
+                "properties": {
+                    "__type": {
+                        "description": "Type of expression",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "Name of expression",
+                        "type": "string"
+                    },
+                    "operation": {
+                        "description": "Operation type",
+                        "type": "string"
+                    },
+                    "values": {
+                        "description": "Array of operands",
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "__type": {
+                                "description": "Type of operand",
+                                "type": "string"
+                            },
+                            "required": [
+                                "__type"
+                            ]
+                        }
+                    },
+                    "negate": {
+                        "description": "Invert the result",
+                        "type": "integer"
+                    },
+                    "property": {
+                        "description": "Property of values/operands array",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

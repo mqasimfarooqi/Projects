@@ -1,4 +1,5 @@
 {
+    "$schema": "./rule-engine-schema.json",
     "entryPointRuleChainNames": [
         "INPUT-TRAFFIC-CHAIN"
     ],
@@ -8,6 +9,22 @@
             "name": "CONNECTION-TYPE-TCP",
             "operation": "EQUALS",
             "values": [
+                {
+                    "__type": "ag::core::rule_engine::ConnectionTypeOperand",
+                    "connectionType": "TCP4"
+                }
+            ],
+            "property": "connection.type"
+        },
+        {
+            "__type": "ag::core::rule_engine::ConnectionTypeExpConfig",
+            "name": "CONNECTION-TYPE-TCP",
+            "operation": "EQUALS",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::ConnectionTypeOperand",
+                    "connectionType": "TCP4"
+                },
                 {
                     "__type": "ag::core::rule_engine::ConnectionTypeOperand",
                     "connectionType": "TCP4"
