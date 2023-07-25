@@ -43,11 +43,6 @@
                             {
                                 "type": "ALLOW"
                             }
-                        ],
-                        "falseActions": [
-                            {
-                                "type": "DROP"
-                            }
                         ]
                     }
                 }

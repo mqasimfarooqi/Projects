@@ -188,9 +188,76 @@
                                 "actions": {
                                     "description": "Actions executed by rule chain",
                                     "type": "object",
-                                    "required": [
-                                        "trueActions",
-                                        "falseActions"
+                                    
+                                    "anyOf": [
+                                        {
+                                            "required": [
+                                                "trueActions"
+                                            ],
+                                            "properties": {
+                                                "trueActions": {
+                                                    "description": "Actions executed if expression returns true",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "type"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "description": "Type of action",
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "ALLOW",
+                                                                    "CALL_CHAIN",
+                                                                    "DROP",
+                                                                    "MARK_DSCP",
+                                                                    "STEER",
+                                                                    "WHITELIST",
+                                                                    "WHITELIST_BYPASS",
+                                                                    "LIMIT_BANDWIDTH",
+                                                                    "TRACK_BANDWIDTH"
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "required": [
+                                                "falseActions"
+                                            ],
+                                            "properties": {
+                                                "falseActions": {
+                                                    "description": "Actions executed if expression returns false",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "type"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "description": "Type of action",
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "ALLOW",
+                                                                    "CALL_CHAIN",
+                                                                    "DROP",
+                                                                    "MARK_DSCP",
+                                                                    "STEER",
+                                                                    "WHITELIST",
+                                                                    "WHITELIST_BYPASS",
+                                                                    "LIMIT_BANDWIDTH",
+                                                                    "TRACK_BANDWIDTH"
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
                                     ]
                                 }
                             }
