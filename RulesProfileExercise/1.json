@@ -18,21 +18,17 @@
             "negate": false
         },
         {
-            "__type": "ag::core::rule_engine::ConnectionTypeExpConfig",
-            "name": "CONNECTION-TYPE-TCP",
+            "__type": "ag::core::rule_engine::DpiStatusExpConfig",
+            "name": "DPI-COMPLETED",
             "operation": "EQUALS",
+            "negate": false,
+            "property": "connection.dpi.status",
             "values": [
                 {
-                    "__type": "ag::core::rule_engine::ConnectionTypeOperand",
-                    "connectionType": "TCP4"
-                },
-                {
-                    "__type": "ag::core::rule_engine::ConnectionTypeOperand",
-                    "connectionType": "TCP4"
+                    "__type": "ag::core::rule_engine::DpiStatusOperand",
+                    "status": "PROTOCOL_DETECTED"
                 }
-            ],
-            "negate": false,
-            "property": "connection.type"
+            ]
         }
     ],
     "ruleChains": [
