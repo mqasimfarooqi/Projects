@@ -1,0 +1,270 @@
+{
+    "title": "Rule Engine Config Schema",
+    "description": "This schema is used to validate a rules profile to be used in the AG",
+    "type": "object",
+    "properties": {
+        "required": [
+            "entryPointRuleChainNames",
+            "expressions",
+            "ruleChains"
+        ],
+        "entryPointRuleChainNames": {
+            "description": "Array containing entry point rule chain names",
+            "uniqueItems": true,
+            "type": "array"
+        },
+        "expressions": {
+            "description": "Array of expressions",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "__type",
+                    "name",
+                    "operation",
+                    "values",
+                    "property",
+                    "negate"
+                ],
+                "oneOf": [
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::ConnectionTypeExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string"
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string",
+                                "enum": [
+                                    "connection.type"
+                                ]
+                            },
+                            "values": {
+                                "description": "Array of operands",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "__type",
+                                        "connectionType"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "description": "Connection type operand",
+                                            "const": "ag::core::rule_engine::ConnectionTypeOperand"
+                                        },
+                                        "connectionType": {
+                                            "description": "Type of connection",
+                                            "type": "string",
+                                            "enum": [
+                                                "TCP4",
+                                                "UDP4",
+                                                "ETHERNET",
+                                                "IPV4",
+                                                "IPV6",
+                                                "ICMP",
+                                                "ICMP4",
+                                                "TCP",
+                                                "TCP4",
+                                                "TCP6",
+                                                "UDP",
+                                                "UDP4",
+                                                "UDP6"
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::DpiStatusExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string"
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string",
+                                "enum": [
+                                    "connection.dpi.status"
+                                ]
+                            },
+                            "values": {
+                                "description": "Array of operands",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "required": [
+                                        "__type",
+                                        "status"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "description": "DPI status operand",
+                                            "const": "ag::core::rule_engine::DpiStatusOperand"
+                                        },
+                                        "status": {
+                                            "description": "DPI status",
+                                            "type": "string",
+                                            "enum": [
+                                                "COMPLETED",
+                                                "DISABLED",
+                                                "PROTOCOL_DETECTED",
+                                                "STARTED",
+                                                "UNKNOWN"
+                                            ]
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        "ruleChains": {
+            "description": "Array of rule chains",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "name",
+                    "rules"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Name of rule chain",
+                        "type": "string"
+                    },
+                    "rules": {
+                        "description": "Array of rules",
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "required": [
+                                "expressionName",
+                                "name",
+                                "actions"
+                            ],
+                            "properties": {
+                                "expressionName": {
+                                    "description": "Name of expression pointed by the rule",
+                                    "type": "string"
+                                },
+                                "name": {
+                                    "description": "Name of rule",
+                                    "type": "string"
+                                },
+                                "actions": {
+                                    "description": "Actions executed by rule chain",
+                                    "type": "object",
+                                    
+                                    "anyOf": [
+                                        {
+                                            "required": [
+                                                "trueActions"
+                                            ],
+                                            "properties": {
+                                                "trueActions": {
+                                                    "description": "Actions executed if expression returns true",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "type"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "description": "Type of action",
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "ALLOW",
+                                                                    "CALL_CHAIN",
+                                                                    "DROP",
+                                                                    "MARK_DSCP",
+                                                                    "STEER",
+                                                                    "WHITELIST",
+                                                                    "WHITELIST_BYPASS",
+                                                                    "LIMIT_BANDWIDTH",
+                                                                    "TRACK_BANDWIDTH"
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "required": [
+                                                "falseActions"
+                                            ],
+                                            "properties": {
+                                                "falseActions": {
+                                                    "description": "Actions executed if expression returns false",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "required": [
+                                                            "type"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "description": "Type of action",
+                                                                "type": "string",
+                                                                "enum": [
+                                                                    "ALLOW",
+                                                                    "CALL_CHAIN",
+                                                                    "DROP",
+                                                                    "MARK_DSCP",
+                                                                    "STEER",
+                                                                    "WHITELIST",
+                                                                    "WHITELIST_BYPASS",
+                                                                    "LIMIT_BANDWIDTH",
+                                                                    "TRACK_BANDWIDTH"
+                                                                ]
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
