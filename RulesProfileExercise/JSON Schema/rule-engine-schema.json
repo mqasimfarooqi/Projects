@@ -188,77 +188,110 @@
                                 "actions": {
                                     "description": "Actions executed by rule chain",
                                     "type": "object",
-                                    
-                                    "anyOf": [
-                                        {
-                                            "required": [
-                                                "trueActions"
-                                            ],
-                                            "properties": {
-                                                "trueActions": {
-                                                    "description": "Actions executed if expression returns true",
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
+                                    "propertyNames": {
+                                        "enum": [
+                                            "trueActions",
+                                            "falseActions"
+                                        ]
+                                    },
+                                    "properties": {
+                                        "trueActions": {
+                                            "description": "Actions executed if expression returns true",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "oneOf": [
+                                                    {
                                                         "required": [
                                                             "type"
                                                         ],
                                                         "properties": {
                                                             "type": {
-                                                                "description": "Type of action",
-                                                                "type": "string",
-                                                                "enum": [
-                                                                    "ALLOW",
-                                                                    "CALL_CHAIN",
-                                                                    "DROP",
-                                                                    "MARK_DSCP",
-                                                                    "STEER",
-                                                                    "WHITELIST",
-                                                                    "WHITELIST_BYPASS",
-                                                                    "LIMIT_BANDWIDTH",
-                                                                    "TRACK_BANDWIDTH"
-                                                                ]
+                                                                "const": "ALLOW"
                                                             }
                                                         }
-                                                    }
-                                                }
-                                            }
-                                        },
-                                        {
-                                            "required": [
-                                                "falseActions"
-                                            ],
-                                            "properties": {
-                                                "falseActions": {
-                                                    "description": "Actions executed if expression returns false",
-                                                    "type": "array",
-                                                    "items": {
-                                                        "type": "object",
+                                                    },
+                                                    {
                                                         "required": [
                                                             "type"
                                                         ],
                                                         "properties": {
                                                             "type": {
-                                                                "description": "Type of action",
-                                                                "type": "string",
-                                                                "enum": [
-                                                                    "ALLOW",
-                                                                    "CALL_CHAIN",
-                                                                    "DROP",
-                                                                    "MARK_DSCP",
-                                                                    "STEER",
-                                                                    "WHITELIST",
-                                                                    "WHITELIST_BYPASS",
-                                                                    "LIMIT_BANDWIDTH",
-                                                                    "TRACK_BANDWIDTH"
-                                                                ]
+                                                                "const": "DROP"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "required": [
+                                                            "type",
+                                                            "params"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "MARK_DSCP"
+                                                            },
+                                                            "params": {
+                                                                "description": "MARK_DSCP params",
+                                                                "type": "object",
+                                                                "required": [
+                                                                    "__type",
+                                                                    "direction",
+                                                                    "dscp"
+                                                                ],
+                                                                "properties": {
+                                                                    "__type": {
+                                                                        "const": "ag::core::rule_engine::DscpRuleActionParamsConfig"
+                                                                    },
+                                                                    "direction": {
+                                                                        "enum": [
+                                                                            "ALL",
+                                                                            "TO_DESTINATION",
+                                                                            "TO_SOURCE"
+                                                                        ]
+                                                                    },
+                                                                    "dscp": {
+                                                                        "enum": [
+                                                                            "DSCP_0",
+                                                                            "DSCP_1",
+                                                                            "DSCP_2"
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "required": [
+                                                            "type",
+                                                            "params"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "CALL_CHAIN"
+                                                            },
+                                                            "params": {
+                                                                "description": "CALL_CHAIN params",
+                                                                "type": "object",
+                                                                "required": [
+                                                                    "__type",
+                                                                    "ruleChainName"
+                                                                ],
+                                                                "properties": {
+                                                                    "__type": {
+                                                                        "const": "ag::core::rule_engine::CallChainRuleActionParamsConfig"
+                                                                    },
+                                                                    "ruleChainName": {
+                                                                        "description": "Name of the rule chain to call",
+                                                                        "type": "string"
+                                                                    }
+                                                                }
                                                             }
                                                         }
                                                     }
-                                                }
+                                                ]
                                             }
                                         }
-                                    ]
+                                    }
                                 }
                             }
                         }
