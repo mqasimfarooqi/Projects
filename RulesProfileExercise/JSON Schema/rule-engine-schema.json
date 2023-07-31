@@ -2,12 +2,20 @@
     "title": "Rule Engine Config Schema",
     "description": "This schema is used to validate a rules profile to be used in the AG",
     "type": "object",
-    "properties": {
-        "required": [
+    "propertyNames": {
+        "enum": [
+            "$schema",
             "entryPointRuleChainNames",
             "expressions",
             "ruleChains"
-        ],
+        ]
+    },
+    "required": [
+        "entryPointRuleChainNames",
+        "expressions",
+        "ruleChains"
+    ],
+    "properties": {
         "entryPointRuleChainNames": {
             "description": "Array containing entry point rule chain names",
             "uniqueItems": true,
@@ -18,6 +26,16 @@
             "type": "array",
             "items": {
                 "type": "object",
+                "propertyNames": {
+                    "enum": [
+                        "__type",
+                        "name",
+                        "operation",
+                        "values",
+                        "property",
+                        "negate"
+                    ]
+                },
                 "required": [
                     "__type",
                     "name",
@@ -40,7 +58,12 @@
                             },
                             "operation": {
                                 "description": "Match type",
-                                "type": "string"
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN",
+                                    "CONTAINS"
+                                ]
                             },
                             "negate": {
                                 "description": "Invert the result",
@@ -52,40 +75,106 @@
                                 "enum": [
                                     "connection.type"
                                 ]
-                            },
-                            "values": {
-                                "description": "Array of operands",
-                                "minItems": 1,
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "required": [
-                                        "__type",
-                                        "connectionType"
-                                    ],
-                                    "properties": {
-                                        "__type": {
-                                            "description": "Connection type operand",
-                                            "const": "ag::core::rule_engine::ConnectionTypeOperand"
-                                        },
-                                        "connectionType": {
-                                            "description": "Type of connection",
-                                            "type": "string",
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "enum": [
+                                        "EQUALS",
+                                        "CONTAINS"
+                                    ]
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
                                             "enum": [
-                                                "TCP4",
-                                                "UDP4",
-                                                "ETHERNET",
-                                                "IPV4",
-                                                "IPV6",
-                                                "ICMP",
-                                                "ICMP4",
-                                                "TCP",
-                                                "TCP4",
-                                                "TCP6",
-                                                "UDP",
-                                                "UDP4",
-                                                "UDP6"
+                                                "__type",
+                                                "connectionType"
                                             ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "connectionType"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "Connection type operand",
+                                                "const": "ag::core::rule_engine::ConnectionTypeOperand"
+                                            },
+                                            "connectionType": {
+                                                "description": "Type of connection",
+                                                "type": "string",
+                                                "enum": [
+                                                    "ETHERNET",
+                                                    "IPV4",
+                                                    "IPV6",
+                                                    "ICMP",
+                                                    "ICMP4",
+                                                    "TCP",
+                                                    "TCP4",
+                                                    "TCP6",
+                                                    "UDP",
+                                                    "UDP4",
+                                                    "UDP6"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "connectionTypes"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "connectionTypes"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "Connection type list operand",
+                                                "const": "ag::core::rule_engine::ConnectionTypeListOperand"
+                                            },
+                                            "connectionTypes": {
+                                                "description": "Types of connection",
+                                                "type": "array",
+                                                "items": {
+                                                    "enum": [
+                                                        "ETHERNET",
+                                                        "IPV4",
+                                                        "IPV6",
+                                                        "ICMP",
+                                                        "ICMP4",
+                                                        "TCP",
+                                                        "TCP4",
+                                                        "TCP6",
+                                                        "UDP",
+                                                        "UDP4",
+                                                        "UDP6"
+                                                    ]
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -105,7 +194,11 @@
                             },
                             "operation": {
                                 "description": "Match type",
-                                "type": "string"
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN"
+                                ]
                             },
                             "negate": {
                                 "description": "Invert the result",
@@ -117,32 +210,1355 @@
                                 "enum": [
                                     "connection.dpi.status"
                                 ]
-                            },
-                            "values": {
-                                "description": "Array of operands",
-                                "minItems": 1,
-                                "type": "array",
-                                "items": {
-                                    "type": "object",
-                                    "required": [
-                                        "__type",
-                                        "status"
-                                    ],
-                                    "properties": {
-                                        "__type": {
-                                            "description": "DPI status operand",
-                                            "const": "ag::core::rule_engine::DpiStatusOperand"
-                                        },
-                                        "status": {
-                                            "description": "DPI status",
-                                            "type": "string",
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
                                             "enum": [
-                                                "COMPLETED",
-                                                "DISABLED",
-                                                "PROTOCOL_DETECTED",
-                                                "STARTED",
-                                                "UNKNOWN"
+                                                "__type",
+                                                "status"
                                             ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "status"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "DPI status operand",
+                                                "const": "ag::core::rule_engine::DpiStatusOperand"
+                                            },
+                                            "status": {
+                                                "description": "DPI status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "COMPLETED",
+                                                    "DISABLED",
+                                                    "PROTOCOL_DETECTED",
+                                                    "STARTED",
+                                                    "UNKNOWN"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "statuses"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "statuses"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "DPI status operand",
+                                                "const": "ag::core::rule_engine::DpiStatusListOperand"
+                                            },
+                                            "statuses": {
+                                                "description": "DPI statuses",
+                                                "type": "array",
+                                                "items": {
+                                                    "enum": [
+                                                        "COMPLETED",
+                                                        "DISABLED",
+                                                        "PROTOCOL_DETECTED",
+                                                        "STARTED",
+                                                        "UNKNOWN"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::HubStatusExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN"
+                                ]
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string",
+                                "enum": [
+                                    "connection.hub.status"
+                                ]
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "status"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "status"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "HUB status operand",
+                                                "const": "ag::core::rule_engine::HubStatusOperand"
+                                            },
+                                            "status": {
+                                                "description": "HUB status",
+                                                "type": "string",
+                                                "enum": [
+                                                    "IDENTIFIED",
+                                                    "UNIDENTIFIED",
+                                                    "UNSUPPORTED"
+                                                ]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "statuses"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "statuses"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "HUB statuses",
+                                                "const": "ag::core::rule_engine::HubStatusListOperand"
+                                            },
+                                            "statuses": {
+                                                "description": "HUB statuses",
+                                                "type": "array",
+                                                "items": {
+                                                    "enum": [
+                                                        "IDENTIFIED",
+                                                        "UNIDENTIFIED",
+                                                        "UNSUPPORTED"
+                                                    ]
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::DomainExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN",
+                                    "MATCH",
+                                    "CONTAINS",
+                                    "STARTS_WITH",
+                                    "ENDS_WITH",
+                                    "SUBSTRING_OF"
+                                ]
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string"
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "value"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "Domain operand",
+                                                "const": "ag::core::rule_engine::DomainOperand"
+                                            },
+                                            "value": {
+                                                "description": "Domain name",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "if": {
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "const": "IN"
+                                    }
+                                }
+                            },
+                            "then": {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "values"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "values"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "Domain operand",
+                                                            "const": "ag::core::rule_engine::DomainListOperand"
+                                                        },
+                                                        "values": {
+                                                            "description": "Domain name",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "values"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "values"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "Domain operand",
+                                                            "const": "ag::core::rule_engine::DomainMapOperand"
+                                                        },
+                                                        "values": {
+                                                            "description": "Domain name",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "else": {
+                                "if": {
+                                    "properties": {
+                                        "operation": {
+                                            "type": "string",
+                                            "const": "MATCH"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "oneOf": [
+                                        {
+                                            "properties": {
+                                                "values": {
+                                                    "description": "Array of operands",
+                                                    "minItems": 1,
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "__type",
+                                                                "value"
+                                                            ]
+                                                        },
+                                                        "required": [
+                                                            "__type",
+                                                            "value"
+                                                        ],
+                                                        "properties": {
+                                                            "__type": {
+                                                                "description": "Regex operand",
+                                                                "const": "ag::core::rule_engine::RegExOperand"
+                                                            },
+                                                            "value": {
+                                                                "description": "Regex operand value",
+                                                                "type": "object",
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "value",
+                                                                        "regex"
+                                                                    ]
+                                                                },
+                                                                "required": [
+                                                                    "value",
+                                                                    "regex"
+                                                                ],
+                                                                "properties": {
+                                                                    "value": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "regex": {
+                                                                        "type": "string"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        {
+                                            "properties": {
+                                                "values": {
+                                                    "description": "Array of operands",
+                                                    "minItems": 1,
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "object",
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "__type",
+                                                                "values"
+                                                            ]
+                                                        },
+                                                        "required": [
+                                                            "__type",
+                                                            "values"
+                                                        ],
+                                                        "properties": {
+                                                            "__type": {
+                                                                "description": "Regex list operand",
+                                                                "const": "ag::core::rule_engine::RegExListOperand"
+                                                            },
+                                                            "values": {
+                                                                "description": "Regex list operand values",
+                                                                "type": "array",
+                                                                "items": {
+                                                                    "propertyNames": {
+                                                                        "enum": [
+                                                                            "values",
+                                                                            "regexList"
+                                                                        ]
+                                                                    },
+                                                                    "required": [
+                                                                        "values",
+                                                                        "regexList"
+                                                                    ],
+                                                                    "type": "object",
+                                                                    "properties": {
+                                                                        "values": {
+                                                                            "type": "string"
+                                                                        },
+                                                                        "regexList": {
+                                                                            "type": "string"
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::MacAddressExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN",
+                                    "RANGE"
+                                ]
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string"
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "address"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "address"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "Domain operand",
+                                                "const": "ag::core::rule_engine::MacAddressOperand"
+                                            },
+                                            "address": {
+                                                "description": "MAC address",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "if": {
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "const": "IN"
+                                    }
+                                }
+                            },
+                            "then": {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "addresses"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "addresses"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "Domain operand",
+                                                            "const": "ag::core::rule_engine::MacAddressListOperand"
+                                                        },
+                                                        "addresses": {
+                                                            "description": "MAC addresses",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "addressMap"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "addressMap"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "Address map operand",
+                                                            "const": "ag::core::rule_engine::MacAddressMapOperand"
+                                                        },
+                                                        "addressMap": {
+                                                            "type": "array",
+                                                            "description": "MAC address map",
+                                                            "items": {
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "MacAddress",
+                                                                        "bool"
+                                                                    ]
+                                                                },
+                                                                "required": [
+                                                                    "MacAddress",
+                                                                    "bool"
+                                                                ],
+                                                                "type": "object",
+                                                                "properties": {
+                                                                    "MacAddress": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "bool": {
+                                                                        "type": "boolean"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "else": {
+                                "if": {
+                                    "properties": {
+                                        "operation": {
+                                            "type": "string",
+                                            "const": "RANGE"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "properties": {
+                                        "values": {
+                                            "description": "Array of operands",
+                                            "minItems": 1,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "__type",
+                                                        "from",
+                                                        "to"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "__type",
+                                                    "from",
+                                                    "to"
+                                                ],
+                                                "properties": {
+                                                    "__type": {
+                                                        "description": "Address range operand",
+                                                        "const": "ag::core::rule_engine::MacAddressRangeOperand"
+                                                    },
+                                                    "from": {
+                                                        "description": "Starting mac address operand",
+                                                        "type": "string"
+                                                    },
+                                                    "to": {
+                                                        "description": "Ending mac address operand",
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::Ipv4AddressExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN",
+                                    "RANGE"
+                                ]
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string"
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "address"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "address"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "IP address operand",
+                                                "const": "ag::core::rule_engine::Ipv4AddressOperand"
+                                            },
+                                            "address": {
+                                                "description": "IP address",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "if": {
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "const": "IN"
+                                    }
+                                }
+                            },
+                            "then": {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "addresses"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "addresses"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "IPv4 address operand",
+                                                            "const": "ag::core::rule_engine::Ipv4AddressListOperand"
+                                                        },
+                                                        "addresses": {
+                                                            "description": "IPv4 addresses",
+                                                            "type": "array",
+                                                            "items": {
+                                                                "type": "string"
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "addressMap"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "addressMap"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "Address map operand",
+                                                            "const": "ag::core::rule_engine::Ipv4AddressMapOperand"
+                                                        },
+                                                        "addressMap": {
+                                                            "type": "array",
+                                                            "description": "IPv4 address map",
+                                                            "items": {
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "Ipv4Address",
+                                                                        "bool"
+                                                                    ]
+                                                                },
+                                                                "required": [
+                                                                    "Ipv4Address",
+                                                                    "bool"
+                                                                ],
+                                                                "properties": {
+                                                                    "Ipv4Address": {
+                                                                        "type": "string"
+                                                                    },
+                                                                    "bool": {
+                                                                        "type": "boolean"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "properties": {
+                                            "values": {
+                                                "description": "Array of operands",
+                                                "minItems": 1,
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "object",
+                                                    "propertyNames": {
+                                                        "enum": [
+                                                            "__type",
+                                                            "networkAddress",
+                                                            "networkMask"
+                                                        ]
+                                                    },
+                                                    "required": [
+                                                        "__type",
+                                                        "networkAddress",
+                                                        "networkMask"
+                                                    ],
+                                                    "properties": {
+                                                        "__type": {
+                                                            "description": "Address network operand",
+                                                            "const": "ag::core::rule_engine::Ipv4AddressNetworkOperand"
+                                                        },
+                                                        "networkAddress": {
+                                                            "type": "string"
+                                                        },
+                                                        "networkMask": {
+                                                            "type": "string"
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                ]
+                            },
+                            "else": {
+                                "if": {
+                                    "properties": {
+                                        "operation": {
+                                            "type": "string",
+                                            "const": "RANGE"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "properties": {
+                                        "values": {
+                                            "description": "Array of operands",
+                                            "minItems": 1,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "__type",
+                                                        "from",
+                                                        "to"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "__type",
+                                                    "from",
+                                                    "to"
+                                                ],
+                                                "properties": {
+                                                    "__type": {
+                                                        "description": "Address range operand",
+                                                        "const": "ag::core::rule_engine::Ipv4AddressRangeOperand"
+                                                    },
+                                                    "from": {
+                                                        "description": "Starting IPv4 address operand",
+                                                        "type": "string"
+                                                    },
+                                                    "to": {
+                                                        "description": "Ending IPv4 address operand",
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::TcpPortExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN",
+                                    "RANGE",
+                                    "GREATER_THAN",
+                                    "GREATER_THAN_EQUALS",
+                                    "LESS_THAN",
+                                    "LESS_THAN_EQUALS"
+                                ]
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string"
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "port"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "port"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "Tcp port operand",
+                                                "const": "ag::core::rule_engine::TcpPortOperand"
+                                            },
+                                            "port": {
+                                                "description": "Port",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "if": {
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "const": "IN"
+                                    }
+                                }
+                            },
+                            "then": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Array of operands",
+                                        "minItems": 1,
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "propertyNames": {
+                                                "enum": [
+                                                    "__type",
+                                                    "ports"
+                                                ]
+                                            },
+                                            "required": [
+                                                "__type",
+                                                "ports"
+                                            ],
+                                            "properties": {
+                                                "__type": {
+                                                    "description": "TCP Port List operand",
+                                                    "const": "ag::core::rule_engine::TcpPortListOperand"
+                                                },
+                                                "ports": {
+                                                    "description": "TCP Ports",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "else": {
+                                "if": {
+                                    "properties": {
+                                        "operation": {
+                                            "type": "string",
+                                            "const": "RANGE"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "properties": {
+                                        "values": {
+                                            "description": "Array of operands",
+                                            "minItems": 1,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "__type",
+                                                        "from",
+                                                        "to"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "__type",
+                                                    "from",
+                                                    "to"
+                                                ],
+                                                "properties": {
+                                                    "__type": {
+                                                        "description": "TCP port range operand",
+                                                        "const": "ag::core::rule_engine::TcpPortRangeOperand"
+                                                    },
+                                                    "from": {
+                                                        "description": "Starting TCP port",
+                                                        "type": "string"
+                                                    },
+                                                    "to": {
+                                                        "description": "Ending TCP port",
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "properties": {
+                                        "values": {
+                                            "description": "Array of operands",
+                                            "minItems": 1,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "__type",
+                                                        "port"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "__type",
+                                                    "port"
+                                                ],
+                                                "properties": {
+                                                    "__type": {
+                                                        "description": "Tcp port operand",
+                                                        "const": "ag::core::rule_engine::TcpPortOperand"
+                                                    },
+                                                    "port": {
+                                                        "description": "Port",
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "__type": {
+                                "description": "Type of expression config",
+                                "type": "string",
+                                "const": "ag::core::rule_engine::UdpPortExpConfig"
+                            },
+                            "name": {
+                                "description": "Name of expression",
+                                "type": "string"
+                            },
+                            "operation": {
+                                "description": "Match type",
+                                "type": "string",
+                                "enum": [
+                                    "EQUALS",
+                                    "IN",
+                                    "RANGE",
+                                    "GREATER_THAN",
+                                    "GREATER_THAN_EQUALS",
+                                    "LESS_THAN",
+                                    "LESS_THAN_EQUALS"
+                                ]
+                            },
+                            "negate": {
+                                "description": "Invert the result",
+                                "type": "boolean"
+                            },
+                            "property": {
+                                "description": "Property of values/operands array",
+                                "type": "string"
+                            }
+                        },
+                        "if": {
+                            "properties": {
+                                "operation": {
+                                    "type": "string",
+                                    "const": "EQUALS"
+                                }
+                            }
+                        },
+                        "then": {
+                            "properties": {
+                                "values": {
+                                    "description": "Array of operands",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "port"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "port"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "description": "UDP port operand",
+                                                "const": "ag::core::rule_engine::UdpPortOperand"
+                                            },
+                                            "port": {
+                                                "description": "Port",
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "else": {
+                            "if": {
+                                "properties": {
+                                    "operation": {
+                                        "type": "string",
+                                        "const": "IN"
+                                    }
+                                }
+                            },
+                            "then": {
+                                "properties": {
+                                    "values": {
+                                        "description": "Array of operands",
+                                        "minItems": 1,
+                                        "type": "array",
+                                        "items": {
+                                            "type": "object",
+                                            "propertyNames": {
+                                                "enum": [
+                                                    "__type",
+                                                    "ports"
+                                                ]
+                                            },
+                                            "required": [
+                                                "__type",
+                                                "ports"
+                                            ],
+                                            "properties": {
+                                                "__type": {
+                                                    "description": "UDP Port List operand",
+                                                    "const": "ag::core::rule_engine::UdpPortListOperand"
+                                                },
+                                                "ports": {
+                                                    "description": "UDP Ports",
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            "else": {
+                                "if": {
+                                    "properties": {
+                                        "operation": {
+                                            "type": "string",
+                                            "const": "RANGE"
+                                        }
+                                    }
+                                },
+                                "then": {
+                                    "properties": {
+                                        "values": {
+                                            "description": "Array of operands",
+                                            "minItems": 1,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "__type",
+                                                        "from",
+                                                        "to"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "__type",
+                                                    "from",
+                                                    "to"
+                                                ],
+                                                "properties": {
+                                                    "__type": {
+                                                        "description": "UDP port range operand",
+                                                        "const": "ag::core::rule_engine::UdpPortRangeOperand"
+                                                    },
+                                                    "from": {
+                                                        "description": "Starting UDP port",
+                                                        "type": "string"
+                                                    },
+                                                    "to": {
+                                                        "description": "Ending UDP port",
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "properties": {
+                                        "values": {
+                                            "description": "Array of operands",
+                                            "minItems": 1,
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "__type",
+                                                        "port"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "__type",
+                                                    "port"
+                                                ],
+                                                "properties": {
+                                                    "__type": {
+                                                        "description": "UDP port operand",
+                                                        "const": "ag::core::rule_engine::UdpPortOperand"
+                                                    },
+                                                    "port": {
+                                                        "description": "Port",
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -157,6 +1573,12 @@
             "type": "array",
             "items": {
                 "type": "object",
+                "propertyNames": {
+                    "enum": [
+                        "name",
+                        "rules"
+                    ]
+                },
                 "required": [
                     "name",
                     "rules"
@@ -202,6 +1624,11 @@
                                                 "type": "object",
                                                 "oneOf": [
                                                     {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type"
+                                                            ]
+                                                        },
                                                         "required": [
                                                             "type"
                                                         ],
@@ -212,6 +1639,11 @@
                                                         }
                                                     },
                                                     {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type"
+                                                            ]
+                                                        },
                                                         "required": [
                                                             "type"
                                                         ],
@@ -222,6 +1654,12 @@
                                                         }
                                                     },
                                                     {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type",
+                                                                "params"
+                                                            ]
+                                                        },
                                                         "required": [
                                                             "type",
                                                             "params"
@@ -233,6 +1671,13 @@
                                                             "params": {
                                                                 "description": "MARK_DSCP params",
                                                                 "type": "object",
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "__type",
+                                                                        "direction",
+                                                                        "dscp"
+                                                                    ]
+                                                                },
                                                                 "required": [
                                                                     "__type",
                                                                     "direction",
@@ -261,6 +1706,12 @@
                                                         }
                                                     },
                                                     {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type",
+                                                                "params"
+                                                            ]
+                                                        },
                                                         "required": [
                                                             "type",
                                                             "params"
@@ -272,6 +1723,143 @@
                                                             "params": {
                                                                 "description": "CALL_CHAIN params",
                                                                 "type": "object",
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "__type",
+                                                                        "ruleChainName"
+                                                                    ]
+                                                                },
+                                                                "required": [
+                                                                    "__type",
+                                                                    "ruleChainName"
+                                                                ],
+                                                                "properties": {
+                                                                    "__type": {
+                                                                        "const": "ag::core::rule_engine::CallChainRuleActionParamsConfig"
+                                                                    },
+                                                                    "ruleChainName": {
+                                                                        "description": "Name of the rule chain to call",
+                                                                        "type": "string"
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        "falseActions": {
+                                            "description": "Actions executed if expression returns false",
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "oneOf": [
+                                                    {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type"
+                                                            ]
+                                                        },
+                                                        "required": [
+                                                            "type"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "ALLOW"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type"
+                                                            ]
+                                                        },
+                                                        "required": [
+                                                            "type"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "DROP"
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type",
+                                                                "params"
+                                                            ]
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "params"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "MARK_DSCP"
+                                                            },
+                                                            "params": {
+                                                                "description": "MARK_DSCP params",
+                                                                "type": "object",
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "__type",
+                                                                        "direction",
+                                                                        "dscp"
+                                                                    ]
+                                                                },
+                                                                "required": [
+                                                                    "__type",
+                                                                    "direction",
+                                                                    "dscp"
+                                                                ],
+                                                                "properties": {
+                                                                    "__type": {
+                                                                        "const": "ag::core::rule_engine::DscpRuleActionParamsConfig"
+                                                                    },
+                                                                    "direction": {
+                                                                        "enum": [
+                                                                            "ALL",
+                                                                            "TO_DESTINATION",
+                                                                            "TO_SOURCE"
+                                                                        ]
+                                                                    },
+                                                                    "dscp": {
+                                                                        "enum": [
+                                                                            "DSCP_0",
+                                                                            "DSCP_1",
+                                                                            "DSCP_2"
+                                                                        ]
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    },
+                                                    {
+                                                        "propertyNames": {
+                                                            "enum": [
+                                                                "type",
+                                                                "params"
+                                                            ]
+                                                        },
+                                                        "required": [
+                                                            "type",
+                                                            "params"
+                                                        ],
+                                                        "properties": {
+                                                            "type": {
+                                                                "const": "CALL_CHAIN"
+                                                            },
+                                                            "params": {
+                                                                "description": "CALL_CHAIN params",
+                                                                "type": "object",
+                                                                "propertyNames": {
+                                                                    "enum": [
+                                                                        "__type",
+                                                                        "ruleChainName"
+                                                                    ]
+                                                                },
                                                                 "required": [
                                                                     "__type",
                                                                     "ruleChainName"

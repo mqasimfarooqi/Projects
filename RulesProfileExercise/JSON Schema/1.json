@@ -18,6 +18,242 @@
             "negate": false
         },
         {
+            "__type": "ag::core::rule_engine::ConnectionTypeExpConfig",
+            "name": "WHITELIST-HTTPS-DOMAINS-2-1-1",
+            "operation": "IN",
+            "property": "connection.type",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::ConnectionTypeListOperand",
+                    "connectionTypes": [
+                        "TCP4",
+                        "TCP6"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::HubStatusExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "EQUALS",
+            "property": "connection.hub.status",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::HubStatusOperand",
+                    "status": "IDENTIFIED"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DomainExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "EQUALS",
+            "property": "dummy",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::DomainOperand",
+                    "value": "dummy"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DomainExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "IN",
+            "property": "dummy",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::DomainListOperand",
+                    "values": [
+                        "dummy"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DomainExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "MATCH",
+            "property": "dummy",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExListOperand",
+                    "values": [
+                        {"regexList": "asdads", "values": "asdadsasd"},
+                        {"regexList": "asdads", "values": "asdadsasd"}
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::MacAddressExpConfig",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "operation": "IN",
+            "property": "connection.ethernet.srcAddress",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::MacAddressListOperand",
+                    "addresses": [
+                        "AA:BB:CC:DD:EE:FF",
+                        "AA:BB:CC:DD:EE:FF"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::MacAddressExpConfig",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "operation": "IN",
+            "property": "connection.ethernet.srcAddress",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::MacAddressMapOperand",
+                    "addressMap": [
+                        {"MacAddress": "AA:BB:CC:DD:EE:FF", "bool": true},
+                        {"MacAddress": "AA:BB:CC:DD:EE:EE", "bool": false}
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::MacAddressExpConfig",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "operation": "RANGE",
+            "property": "connection.ethernet.srcAddress",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::MacAddressRangeOperand",
+                    "from": "AA:BB:CC:DD:EE:EE",
+                    "to": "AA:BB:CC:DD:EE:FF"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::MacAddressExpConfig",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "operation": "EQUALS",
+            "property": "connection.ethernet.srcAddress",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::MacAddressOperand",
+                    "address": "192.168.10.20"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+            "operation": "EQUALS",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "property": "connection.ip.dstAddress",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressOperand",
+                    "address": "192.168.21.25"
+                },
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressOperand",
+                    "address": "192.168.21.25"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+            "operation": "IN",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "negate": false,
+            "property": "connection.ip.dstAddress",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressListOperand",
+                    "addresses": [
+                        "192.168.21.25"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+            "operation": "IN",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "negate": false,
+            "property": "connection.ip.dstAddress",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressMapOperand",
+                    "addressMap": [
+                        {"Ipv4Address": "192.168.10.25", "bool": false},
+                        {"Ipv4Address": "192.168.10.25", "bool": false}
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+            "operation": "IN",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "negate": false,
+            "property": "connection.ip.dstAddress",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressNetworkOperand",
+                    "networkAddress": "192.168.10.20",
+                    "networkMask": "192.168.10.0"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::Ipv4AddressExpConfig",
+            "operation": "RANGE",
+            "name": "WHITELIST-IP-MACS-3-1",
+            "negate": false,
+            "property": "connection.ip.dstAddress",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::Ipv4AddressRangeOperand",
+                    "from": "192.168.21.25",
+                    "to": "192.168.21.30"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DomainExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "MATCH",
+            "property": "dummy",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExOperand",
+                    "value": {"regex": "asdads", "value": "asdadsasd"}
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::HubStatusExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "IN",
+            "property": "connection.hub.status",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::HubStatusListOperand",
+                    "statuses": [
+                        "IDENTIFIED"
+                    ]
+                }
+            ]
+        },
+        {
             "__type": "ag::core::rule_engine::DpiStatusExpConfig",
             "name": "DPI-COMPLETED",
             "operation": "EQUALS",
@@ -27,6 +263,209 @@
                 {
                     "__type": "ag::core::rule_engine::DpiStatusOperand",
                     "status": "PROTOCOL_DETECTED"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DpiStatusExpConfig",
+            "name": "DPI-COMPLETED",
+            "operation": "IN",
+            "negate": false,
+            "property": "connection.dpi.status",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::DpiStatusListOperand",
+                    "statuses": [
+                        "PROTOCOL_DETECTED"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "IN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortListOperand",
+                    "ports":  [
+                        "53"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "RANGE",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortRangeOperand",
+                    "from": "53",
+                    "to": "57"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "GREATER_THAN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "GREATER_THAN_EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "LESS_THAN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::TcpPortExpConfig",
+            "operation": "LESS_THAN_EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::TcpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "IN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortListOperand",
+                    "ports":  [
+                        "53"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "RANGE",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortRangeOperand",
+                    "from": "53",
+                    "to": "57"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "GREATER_THAN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "GREATER_THAN_EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "LESS_THAN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortOperand",
+                    "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UdpPortExpConfig",
+            "operation": "LESS_THAN_EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "connection.tcp.dstPort",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UdpPortOperand",
+                    "port": "53"
                 }
             ]
         }
@@ -41,7 +480,97 @@
                     "actions": {
                         "trueActions": [
                             {
+                                "type": "DROP"
+                            },
+                            {
                                 "type": "ALLOW"
+                            },
+                            {
+                                "type": "MARK_DSCP",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::DscpRuleActionParamsConfig",
+                                    "direction": "ALL",
+                                    "dscp": "DSCP_2"
+                                }
+                            },
+                            {
+                                "type": "CALL_CHAIN",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "CATEGORY-CHAIN"
+                                }
+                            }                            
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "ALLOW"
+                            },
+                            {
+                                "type": "MARK_DSCP",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::DscpRuleActionParamsConfig",
+                                    "direction": "ALL",
+                                    "dscp": "DSCP_2"
+                                }
+                            },
+                            {
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "CATEGORY-CHAIN"
+                                },
+                                "type": "CALL_CHAIN"
+                            },
+                            {
+                                "type": "DROP"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "expressionName": "CONNECTION-TYPE-TCP",
+                    "name": "TCP-RULE",
+                    "actions": {
+                        "trueActions": [
+                            {
+                                "type": "ALLOW"
+                            },
+                            {
+                                "type": "MARK_DSCP",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::DscpRuleActionParamsConfig",
+                                    "direction": "ALL",
+                                    "dscp": "DSCP_2"
+                                }
+                            },
+                            {
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "CATEGORY-CHAIN"
+                                },
+                                "type": "CALL_CHAIN"
+                            }
+                        ],
+                        "falseActions": [
+                            {
+                                "type": "ALLOW"
+                            },
+                            {
+                                "type": "MARK_DSCP",
+                                "params": {
+                                    "__type": "ag::core::rule_engine::DscpRuleActionParamsConfig",
+                                    "direction": "ALL",
+                                    "dscp": "DSCP_2"
+                                }
+                            },
+                            {
+                                "params": {
+                                    "__type": "ag::core::rule_engine::CallChainRuleActionParamsConfig",
+                                    "ruleChainName": "CATEGORY-CHAIN"
+                                },
+                                "type": "CALL_CHAIN"
+                            },
+                            {
+                                "type": "DROP"
                             }
                         ]
                     }
