@@ -77,6 +77,21 @@
         {
             "__type": "ag::core::rule_engine::DomainExpConfig",
             "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "IN",
+            "property": "dummy",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::DomainMapOperand",
+                    "values": [
+                        "dummy"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DomainExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
             "operation": "MATCH",
             "property": "dummy",
             "negate": false,
@@ -84,9 +99,22 @@
                 {
                     "__type": "ag::core::rule_engine::RegExListOperand",
                     "values": [
-                        {"regexList": "asdads", "values": "asdadsasd"},
-                        {"regexList": "asdads", "values": "asdadsasd"}
+                        "([a-z0-9-]+[.])*cdninstagram[.]com",
+                        "instagram[.]([a-z0-9-]+[.])*fna[.]fbcdn[.]net"
                     ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::DomainExpConfig",
+            "name": "HUB-STATUS-IDENTIFIED",
+            "operation": "MATCH",
+            "property": "dummy",
+            "negate": false,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExOperand",
+                    "value": "([a-z0-9-]+[.])*cdninstagram[.]com"
                 }
             ]
         },
@@ -222,19 +250,6 @@
                     "__type": "ag::core::rule_engine::Ipv4AddressRangeOperand",
                     "from": "192.168.21.25",
                     "to": "192.168.21.30"
-                }
-            ]
-        },
-        {
-            "__type": "ag::core::rule_engine::DomainExpConfig",
-            "name": "HUB-STATUS-IDENTIFIED",
-            "operation": "MATCH",
-            "property": "dummy",
-            "negate": false,
-            "values": [
-                {
-                    "__type": "ag::core::rule_engine::RegExOperand",
-                    "value": {"regex": "asdads", "value": "asdadsasd"}
                 }
             ]
         },
@@ -380,7 +395,7 @@
             "operation": "EQUALS",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortOperand",
@@ -393,7 +408,7 @@
             "operation": "IN",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortListOperand",
@@ -408,7 +423,7 @@
             "operation": "RANGE",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortRangeOperand",
@@ -422,7 +437,7 @@
             "operation": "GREATER_THAN",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortOperand",
@@ -435,7 +450,7 @@
             "operation": "GREATER_THAN_EQUALS",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortOperand",
@@ -448,7 +463,7 @@
             "operation": "LESS_THAN",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortOperand",
@@ -461,11 +476,298 @@
             "operation": "LESS_THAN_EQUALS",
             "name": "DPI-COMPLETED",
             "negate": true,
-            "property": "connection.tcp.dstPort",
+            "property": "connection.udp.dstPort",
             "values": [
                 {
                     "__type": "ag::core::rule_engine::UdpPortOperand",
                     "port": "53"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::PacketTypeExpConfig",
+            "operation": "EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "packet.type",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::PacketTypeOperand",
+                    "packetType": "DNS"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::PacketTypeExpConfig",
+            "operation": "IN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "packet.type",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::PacketTypeListOperand",
+                    "packetTypes": [
+                        "DNS",
+                        "TCP4"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::PacketTypeExpConfig",
+            "operation": "CONTAINS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "packet.type",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::PacketTypeOperand",
+                    "packetType": "DNS"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::ZoneTypeExpConfig",
+            "operation": "EQUALS",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "packet.zone.fromType",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::ZoneTypeOperand",
+                    "zoneType": "USER"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::ZoneTypeExpConfig",
+            "operation": "IN",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "property": "packet.zone.toType",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::ZoneTypeListOperand",
+                    "zoneTypes": [
+                        "USER",
+                        "WAN"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::UserSessionStateExpConfig",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "operation": "EQUALS",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UserSessionStateOperand",
+                    "state": "ACTIVE"
+                }
+            ],
+            "property": "connection.userSession.state"
+        },
+        {
+            "__type": "ag::core::rule_engine::UserSessionStateExpConfig",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "operation": "IN",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::UserSessionStateListOperand",
+                    "states": [
+                        "ACTIVE",
+                        "ACTIVE"
+                    ]
+                }
+            ],
+            "property": "connection.userSession.state"
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiStatusExpConfig",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "operation": "EQUALS",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::NdpiStatusOperand",
+                    "status": "COMPLETED"
+                }
+            ],
+            "property": "connection.dpi.ndpi.status"
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiStatusExpConfig",
+            "name": "DPI-COMPLETED",
+            "negate": true,
+            "operation": "IN",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::NdpiStatusListOperand",
+                    "statuses": [
+                        "COMPLETED",
+                        "COMPLETED"
+                    ]
+                }
+            ],
+            "property": "connection.dpi.ndpi.status"
+        },
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "name": "NETWORK-CATEGORY-TRAFFIC",
+            "operation": "EQUALS",
+            "negate": true,
+            "property": "connection.dpi.ndpi.category",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::StringOperand",
+                    "value": "Network"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "operation": "IN",
+            "property": "connection.dpi.ndpi.category",
+            "name": "INSTAGRAM-VOIP-TRAFFIC-SKIP",
+            "negate": true,
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::StringListOperand",
+                    "values": [
+                        "VoIP"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "IN",
+            "property": "connection.domain",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::StringMapOperand",
+                    "valuesMap": [
+                        {"string": "Hello", "bool": false},
+                        {"string": "Hello", "bool": false}
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "MATCH",
+            "property": "connection.domain",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExOperand",
+                    "value": "([a-z0-9-]+[.])*cdninstagram[.]com"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::StringExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "MATCH",
+            "property": "connection.domain",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExListOperand",
+                    "values": [
+                        "([a-z0-9-]+[.])*cdninstagram[.]com",
+                        "([a-z0-9-]+[.])*cdninstagram[.]com"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiCategoryExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "EQUALS",
+            "property": "connection.dstNdpiCategory",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::NdpiCategoryOperand",
+                    "value": "Hello"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiCategoryExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "IN",
+            "property": "connection.dstNdpiCategory",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::NdpiCategoryListOperand",
+                    "values": [
+                        "Hello"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiCategoryExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "IN",
+            "property": "connection.dstNdpiCategory",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::NdpiCategoryMapOperand",
+                    "valuesMap": [
+                        {"string": "Hello", "bool": false}
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiCategoryExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "MATCH",
+            "property": "connection.dstNdpiCategory",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExListOperand",
+                    "values": [
+                        "([a-z0-9-]+[.])*cdninstagram[.]com",
+                        "([a-z0-9-]+[.])*cdninstagram[.]com"
+                    ]
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiCategoryExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "MATCH",
+            "property": "connection.dstNdpiCategory",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExOperand",
+                    "value": "([a-z0-9-]+[.])*cdninstagram[.]com"
+                }
+            ]
+        },
+        {
+            "__type": "ag::core::rule_engine::NdpiDomainExpConfig",
+            "name": "WHITELIST-DOMAINS",
+            "negate": true,
+            "operation": "MATCH",
+            "property": "connection.dstNdpiDomain",
+            "values": [
+                {
+                    "__type": "ag::core::rule_engine::RegExOperand",
+                    "value": "([a-z0-9-]+[.])*cdninstagram[.]com"
                 }
             ]
         }
