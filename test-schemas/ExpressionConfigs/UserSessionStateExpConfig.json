@@ -1,0 +1,154 @@
+{
+    "UserSessionStateExpConfig": {
+        "type": "object",
+        "propertyNames": {
+            "enum": [
+                "__type",
+                "name",
+                "operation",
+                "values",
+                "property",
+                "negate"
+            ]
+        },
+        "required": [
+            "__type",
+            "name",
+            "operation",
+            "values",
+            "property",
+            "negate"
+        ],
+        "properties": {
+            "__type": {
+                "description": "Defines the type of expressions to be used. This will define which other properties and operands will be used with the expression",
+                "type": "string",
+                "const": "ag::core::rule_engine::UserSessionStateExpConfig"
+            },
+            "name": {
+                "description": "A user defined name of the expression. This will be used by the rule chains to refer to the expression",
+                "type": "string"
+            },
+            "operation": {
+                "description": "Defines what operation will be used, on the operands, to generate the result of expression",
+                "type": "string",
+                "enum": [
+                    "EQUALS",
+                    "IN"
+                ]
+            },
+            "negate": {
+                "description": "Defines whether to invert the outcome of expression or not",
+                "type": "boolean"
+            },
+            "property": {
+                "description": "Defines the property to be used for evaluating the expression",
+                "type": "string",
+                "enum": [
+                    "connection.userSession.state"
+                ]
+            }
+        },
+        "if": {
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "const": "EQUALS"
+                }
+            }
+        },
+        "then": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "state"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "state"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::UserSessionStateOperand"
+                            },
+                            "state": {
+                                "type": "string",
+                                "$ref": "#/$defs/enums/UserSessionState"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "else": {
+            "if": {
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "const": "IN"
+                    }
+                }
+            },
+            "then": {
+                "properties": {
+                    "values": {
+                        "description": "An array of operands which define the type of operand and its parameters",
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "propertyNames": {
+                                "enum": [
+                                    "__type",
+                                    "states"
+                                ]
+                            },
+                            "required": [
+                                "__type",
+                                "states"
+                            ],
+                            "properties": {
+                                "__type": {
+                                    "const": "ag::core::rule_engine::UserSessionStateListOperand"
+                                },
+                                "states": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string",
+                                        "$ref": "#/$defs/enums/UserSessionState"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "enums": {
+            "UserSessionState": {
+                "enum": [
+                    "CREATED",
+                    "AUTHENTICATING",
+                    "AUTHENTICATED",
+                    "AUTHENTICATION_FAILED",
+                    "ACCOUNT_STARTING",
+                    "ACCOUNT_STARTED",
+                    "ACTIVE",
+                    "ACCOUNT_STOPPING",
+                    "ACCOUNT_STOPPED",
+                    "INACTIVE"
+                ]
+            }
+        }
+    }
+}

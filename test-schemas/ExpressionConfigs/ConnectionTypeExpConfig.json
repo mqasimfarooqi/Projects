@@ -1,0 +1,148 @@
+{
+    "ConnectionTypeExpConfig": {
+        "type": "object",
+        "propertyNames": {
+            "enum": [
+                "__type",
+                "name",
+                "operation",
+                "values",
+                "property",
+                "negate"
+            ]
+        },
+        "required": [
+            "__type",
+            "name",
+            "operation",
+            "values",
+            "property",
+            "negate"
+        ],
+        "properties": {
+            "__type": {
+                "description": "Defines the type of expressions to be used. This will define which other properties and operands will be used with the expression",
+                "type": "string",
+                "const": "ag::core::rule_engine::ConnectionTypeExpConfig"
+            },
+            "name": {
+                "description": "A user defined name of the expression. This will be used by the rule chains to refer to the expression",
+                "type": "string"
+            },
+            "operation": {
+                "description": "Defines what operation will be used, on the operands, to generate the result of expression",
+                "type": "string",
+                "enum": [
+                    "EQUALS",
+                    "IN",
+                    "CONTAINS"
+                ]
+            },
+            "negate": {
+                "description": "Defines whether to invert the outcome of expression or not",
+                "type": "boolean"
+            },
+            "property": {
+                "description": "Defines the property to be used for evaluating the expression",
+                "type": "string",
+                "enum": [
+                    "connection.type"
+                ]
+            }
+        },
+        "if": {
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "enum": [
+                        "EQUALS",
+                        "CONTAINS"
+                    ]
+                }
+            }
+        },
+        "then": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "connectionType"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "connectionType"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::ConnectionTypeOperand"
+                            },
+                            "connectionType": {
+                                "type": "string",
+                                "$ref": "#/$defs/enums/ConnectionType"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "else": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "connectionTypes"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "connectionTypes"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::ConnectionTypeListOperand"
+                            },
+                            "connectionTypes": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/$defs/enums/ConnectionType"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "enums": {
+            "ConnectionType": {
+                "enum": [
+                    "ETHERNET",
+                    "IPV4",
+                    "IPV6",
+                    "ICMP",
+                    "ICMP4",
+                    "TCP",
+                    "TCP4",
+                    "TCP6",
+                    "UDP",
+                    "UDP4",
+                    "UDP6"
+                ]
+            }
+        }
+    }
+}

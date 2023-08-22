@@ -1,0 +1,31 @@
+{
+    "AndLogicalExpConfig": {
+        "type": "object",
+        "propertyNames": {
+            "enum": [
+                "__type",
+                "name",
+                "expressions"
+            ]
+        },
+        "required": [
+            "__type",
+            "name",
+            "expressions"
+        ],
+        "properties": {
+            "__type": {
+                "description": "Defines the type of expressions to be used. This will define which other properties and operands will be used with the expression",
+                "type": "string",
+                "const": "ag::core::rule_engine::AndLogicalExpConfig"
+            },
+            "name": {
+                "description": "A user defined name of the expression. This will be used by the rule chains to refer to the expression",
+                "type": "string"
+            },
+            "expressions": {
+                "$ref": "./expressions.json#/expressions"
+            }
+        }
+    }
+}

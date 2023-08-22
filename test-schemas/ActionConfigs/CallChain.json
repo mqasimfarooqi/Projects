@@ -1,0 +1,40 @@
+{
+    "description": "Call chain action type",
+    "type": "object",
+    "propertyNames": {
+        "enum": [
+            "type",
+            "params"
+        ]
+    },
+    "required": [
+        "type",
+        "params"
+    ],
+    "properties": {
+        "type": {
+            "const": "CALL_CHAIN"
+        },
+        "params": {
+            "type": "object",
+            "propertyNames": {
+                "enum": [
+                    "__type",
+                    "ruleChainName"
+                ]
+            },
+            "required": [
+                "__type",
+                "ruleChainName"
+            ],
+            "properties": {
+                "__type": {
+                    "const": "ag::core::rule_engine::CallChainRuleActionParamsConfig"
+                },
+                "ruleChainName": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,136 @@
+{
+    "HubStatusExpConfig": {
+        "type": "object",
+        "propertyNames": {
+            "enum": [
+                "__type",
+                "name",
+                "operation",
+                "values",
+                "property",
+                "negate"
+            ]
+        },
+        "required": [
+            "__type",
+            "name",
+            "operation",
+            "values",
+            "property",
+            "negate"
+        ],
+        "properties": {
+            "__type": {
+                "description": "Defines the type of expressions to be used. This will define which other properties and operands will be used with the expression",
+                "type": "string",
+                "const": "ag::core::rule_engine::HubStatusExpConfig"
+            },
+            "name": {
+                "description": "A user defined name of the expression. This will be used by the rule chains to refer to the expression",
+                "type": "string"
+            },
+            "operation": {
+                "description": "Defines what operation will be used, on the operands, to generate the result of expression",
+                "type": "string",
+                "enum": [
+                    "EQUALS",
+                    "IN"
+                ]
+            },
+            "negate": {
+                "description": "Defines whether to invert the outcome of expression or not",
+                "type": "boolean"
+            },
+            "property": {
+                "description": "Defines the property to be used for evaluating the expression",
+                "type": "string",
+                "enum": [
+                    "connection.hub.status"
+                ]
+            }
+        },
+        "if": {
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "const": "EQUALS"
+                }
+            }
+        },
+        "then": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "status"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "status"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::HubStatusOperand"
+                            },
+                            "status": {
+                                "type": "string",
+                                "$ref": "#/$defs/enums/HubStatus"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "else": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "statuses"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "statuses"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::HubStatusListOperand"
+                            },
+                            "statuses": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/$defs/enums/HubStatus"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "$defs": {
+        "enums": {
+            "HubStatus": {
+                "enum": [
+                    "IDENTIFIED",
+                    "UNIDENTIFIED",
+                    "UNSUPPORTED"
+                ]
+            }
+        }
+    }
+}

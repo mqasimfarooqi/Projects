@@ -1,0 +1,273 @@
+{
+    "Ipv4AddressExpConfig": {
+        "type": "object",
+        "propertyNames": {
+            "enum": [
+                "__type",
+                "name",
+                "operation",
+                "values",
+                "property",
+                "negate"
+            ]
+        },
+        "required": [
+            "__type",
+            "name",
+            "operation",
+            "values",
+            "property",
+            "negate"
+        ],
+        "properties": {
+            "__type": {
+                "description": "Defines the type of expressions to be used. This will define which other properties and operands will be used with the expression",
+                "type": "string",
+                "const": "ag::core::rule_engine::Ipv4AddressExpConfig"
+            },
+            "name": {
+                "description": "A user defined name of the expression. This will be used by the rule chains to refer to the expression",
+                "type": "string"
+            },
+            "operation": {
+                "description": "Defines what operation will be used, on the operands, to generate the result of expression",
+                "type": "string",
+                "enum": [
+                    "EQUALS",
+                    "IN",
+                    "RANGE"
+                ]
+            },
+            "negate": {
+                "description": "Defines whether to invert the outcome of expression or not",
+                "type": "boolean"
+            },
+            "property": {
+                "description": "Defines the property to be used for evaluating the expression",
+                "type": "string",
+                "enum": [
+                    "connection.ip.dstAddress",
+                    "connection.ip.srcAddress",
+                    "packet.ip.dstAddress",
+                    "packet.ip.srcAddress"
+                ]
+            }
+        },
+        "if": {
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "const": "EQUALS"
+                }
+            }
+        },
+        "then": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "address"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "address"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::Ipv4AddressOperand"
+                            },
+                            "address": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "else": {
+            "if": {
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "const": "IN"
+                    }
+                }
+            },
+            "then": {
+                "oneOf": [
+                    {
+                        "properties": {
+                            "values": {
+                                "description": "An array of operands which define the type of operand and its parameters",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                        "enum": [
+                                            "__type",
+                                            "addresses"
+                                        ]
+                                    },
+                                    "required": [
+                                        "__type",
+                                        "addresses"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "const": "ag::core::rule_engine::Ipv4AddressListOperand"
+                                        },
+                                        "addresses": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "values": {
+                                "description": "An array of operands which define the type of operand and its parameters",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                        "enum": [
+                                            "__type",
+                                            "addressMap"
+                                        ]
+                                    },
+                                    "required": [
+                                        "__type",
+                                        "addressMap"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "const": "ag::core::rule_engine::Ipv4AddressMapOperand"
+                                        },
+                                        "addressMap": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "Ipv4Address",
+                                                        "bool"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "Ipv4Address",
+                                                    "bool"
+                                                ],
+                                                "properties": {
+                                                    "Ipv4Address": {
+                                                        "type": "string"
+                                                    },
+                                                    "bool": {
+                                                        "type": "boolean"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "values": {
+                                "description": "An array of operands which define the type of operand and its parameters",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                        "enum": [
+                                            "__type",
+                                            "networkAddress",
+                                            "networkMask"
+                                        ]
+                                    },
+                                    "required": [
+                                        "__type",
+                                        "networkAddress",
+                                        "networkMask"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "const": "ag::core::rule_engine::Ipv4AddressNetworkOperand"
+                                        },
+                                        "networkAddress": {
+                                            "type": "string"
+                                        },
+                                        "networkMask": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "else": {
+                "if": {
+                    "properties": {
+                        "operation": {
+                            "type": "string",
+                            "const": "RANGE"
+                        }
+                    }
+                },
+                "then": {
+                    "properties": {
+                        "values": {
+                            "description": "An array of operands which define the type of operand and its parameters",
+                            "minItems": 1,
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "propertyNames": {
+                                    "enum": [
+                                        "__type",
+                                        "from",
+                                        "to"
+                                    ]
+                                },
+                                "required": [
+                                    "__type",
+                                    "from",
+                                    "to"
+                                ],
+                                "properties": {
+                                    "__type": {
+                                        "const": "ag::core::rule_engine::Ipv4AddressRangeOperand"
+                                    },
+                                    "from": {
+                                        "type": "string"
+                                    },
+                                    "to": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

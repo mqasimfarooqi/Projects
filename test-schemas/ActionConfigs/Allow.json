@@ -1,0 +1,17 @@
+{
+    "description": "Allow action type",
+    "type": "object",
+    "propertyNames": {
+        "enum": [
+            "type"
+        ]
+    },
+    "required": [
+        "type"
+    ],
+    "properties": {
+        "type": {
+            "const": "ALLOW"
+        }
+    }
+}

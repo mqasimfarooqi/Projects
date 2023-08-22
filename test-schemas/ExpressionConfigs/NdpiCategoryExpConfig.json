@@ -1,0 +1,267 @@
+{
+    "NdpiCategoryExpConfig": {
+        "type": "object",
+        "propertyNames": {
+            "enum": [
+                "__type",
+                "name",
+                "operation",
+                "values",
+                "property",
+                "negate"
+            ]
+        },
+        "required": [
+            "__type",
+            "name",
+            "operation",
+            "values",
+            "property",
+            "negate"
+        ],
+        "properties": {
+            "__type": {
+                "description": "Defines the type of expressions to be used. This will define which other properties and operands will be used with the expression",
+                "type": "string",
+                "const": "ag::core::rule_engine::NdpiCategoryExpConfig"
+            },
+            "name": {
+                "description": "A user defined name of the expression. This will be used by the rule chains to refer to the expression",
+                "type": "string"
+            },
+            "operation": {
+                "description": "Defines what operation will be used, on the operands, to generate the result of expression",
+                "type": "string",
+                "enum": [
+                    "EQUALS",
+                    "IN",
+                    "MATCH"
+                ]
+            },
+            "negate": {
+                "description": "Defines whether to invert the outcome of expression or not",
+                "type": "boolean"
+            },
+            "property": {
+                "description": "Defines the property to be used for evaluating the expression",
+                "type": "string",
+                "enum": [
+                    "connection.dstNdpiCategory"
+                ]
+            }
+        },
+        "if": {
+            "properties": {
+                "operation": {
+                    "type": "string",
+                    "const": "EQUALS"
+                }
+            }
+        },
+        "then": {
+            "properties": {
+                "values": {
+                    "description": "An array of operands which define the type of operand and its parameters",
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "__type",
+                                "value"
+                            ]
+                        },
+                        "required": [
+                            "__type",
+                            "value"
+                        ],
+                        "properties": {
+                            "__type": {
+                                "const": "ag::core::rule_engine::NdpiCategoryOperand"
+                            },
+                            "value": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "else": {
+            "if": {
+                "properties": {
+                    "operation": {
+                        "type": "string",
+                        "const": "IN"
+                    }
+                }
+            },
+            "then": {
+                "oneOf": [
+                    {
+                        "properties": {
+                            "values": {
+                                "description": "An array of operands which define the type of operand and its parameters",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                        "enum": [
+                                            "__type",
+                                            "values"
+                                        ]
+                                    },
+                                    "required": [
+                                        "__type",
+                                        "values"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "const": "ag::core::rule_engine::NdpiCategoryListOperand"
+                                        },
+                                        "values": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "values": {
+                                "description": "An array of operands which define the type of operand and its parameters",
+                                "minItems": 1,
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "propertyNames": {
+                                        "enum": [
+                                            "__type",
+                                            "valuesMap"
+                                        ]
+                                    },
+                                    "required": [
+                                        "__type",
+                                        "valuesMap"
+                                    ],
+                                    "properties": {
+                                        "__type": {
+                                            "const": "ag::core::rule_engine::NdpiCategoryMapOperand"
+                                        },
+                                        "valuesMap": {
+                                            "type": "array",
+                                            "items": {
+                                                "propertyNames": {
+                                                    "enum": [
+                                                        "string",
+                                                        "bool"
+                                                    ]
+                                                },
+                                                "required": [
+                                                    "string",
+                                                    "bool"
+                                                ],
+                                                "type": "object",
+                                                "properties": {
+                                                    "string": {
+                                                        "type": "string"
+                                                    },
+                                                    "bool": {
+                                                        "type": "boolean"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ]
+            },
+            "else": {
+                "if": {
+                    "properties": {
+                        "operation": {
+                            "type": "string",
+                            "const": "MATCH"
+                        }
+                    }
+                },
+                "then": {
+                    "oneOf": [
+                        {
+                            "properties": {
+                                "values": {
+                                    "description": "An array of operands which define the type of operand and its parameters",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "value"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "value"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "const": "ag::core::rule_engine::RegExOperand"
+                                            },
+                                            "value": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "properties": {
+                                "values": {
+                                    "description": "An array of operands which define the type of operand and its parameters",
+                                    "minItems": 1,
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "propertyNames": {
+                                            "enum": [
+                                                "__type",
+                                                "values"
+                                            ]
+                                        },
+                                        "required": [
+                                            "__type",
+                                            "values"
+                                        ],
+                                        "properties": {
+                                            "__type": {
+                                                "const": "ag::core::rule_engine::RegExListOperand"
+                                            },
+                                            "values": {
+                                                "type": "array",
+                                                "items": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

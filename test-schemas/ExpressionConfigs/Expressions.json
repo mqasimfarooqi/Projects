@@ -1,0 +1,68 @@
+{
+    "expressions": {
+        "description": "List of expressions that are referenced by rule chains. Called once the flow enters a particular chain",
+        "type": "array",
+        "items": {
+            "type": "object",
+            "oneOf": [
+                {
+                    "$ref": "./ConnectionTypeExpConfig.json#/ConnectionTypeExpConfig"
+                },
+                {
+                    "$ref": "./DpiStatusExpConfig.json#/DpiStatusExpConfig"
+                },
+                {
+                    "$ref": "./HubStatusExpConfig.json#/HubStatusExpConfig"
+                },
+                {
+                    "$ref": "./DomainExpConfig.json#/DomainExpConfig"
+                },
+                {
+                    "$ref": "./MacAddressExpConfig.json#/MacAddressExpConfig"
+                },
+                {
+                    "$ref": "./Ipv4AddressExpConfig.json#/Ipv4AddressExpConfig"
+                },
+                {
+                    "$ref": "./TcpPortExpConfig.json#/TcpPortExpConfig"
+                },
+                {
+                    "$ref": "./UdpPortExpConfig.json#/UdpPortExpConfig"
+                },
+                {
+                    "$ref": "./PacketTypeExpConfig.json#/PacketTypeExpConfig"
+                },
+                {
+                    "$ref": "./ZoneTypeExpConfig.json#/ZoneTypeExpConfig"
+                },
+                {
+                    "$ref": "./UserSessionStateExpConfig.json#/UserSessionStateExpConfig"
+                },
+                {
+                    "$ref": "./NdpiStatusExpConfig.json#/NdpiStatusExpConfig"
+                },
+                {
+                    "$ref": "./StringExpConfig.json#/StringExpConfig"
+                },
+                {
+                    "$ref": "./NdpiCategoryExpConfig.json#/NdpiCategoryExpConfig"
+                },
+                {
+                    "$ref": "./NdpiDomainExpConfig.json#/NdpiDomainExpConfig"
+                },
+                {
+                    "$ref": "./NdpiProtocolExpConfig.json#/NdpiProtocolExpConfig"
+                },
+                {
+                    "$ref": "./OrLogicalExpConfig.json#/OrLogicalExpConfig"
+                },
+                {
+                    "$ref": "./AndLogicalExpConfig.json#/AndLogicalExpConfig"
+                },
+                {
+                    "$ref": "./ReferenceExpConfig.json#/ReferenceExpConfig"
+                }
+            ]
+        }
+    }
+}

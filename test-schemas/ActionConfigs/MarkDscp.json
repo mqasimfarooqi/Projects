@@ -1,0 +1,123 @@
+{
+    "description": "Mark Dscp action type",
+    "type": "object",
+    "propertyNames": {
+        "enum": [
+            "type",
+            "params"
+        ]
+    },
+    "required": [
+        "type",
+        "params"
+    ],
+    "properties": {
+        "type": {
+            "const": "MARK_DSCP"
+        },
+        "params": {
+            "type": "object",
+            "propertyNames": {
+                "enum": [
+                    "__type",
+                    "direction",
+                    "dscp"
+                ]
+            },
+            "required": [
+                "__type",
+                "direction",
+                "dscp"
+            ],
+            "properties": {
+                "__type": {
+                    "const": "ag::core::rule_engine::DscpRuleActionParamsConfig"
+                },
+                "direction": {
+                    "enum": [
+                        "ALL",
+                        "TO_DESTINATION",
+                        "TO_SOURCE"
+                    ]
+                },
+                "dscp": {
+                    "type": "string",
+                    "$ref": "#/$defs/enums/DscpValue"
+                }
+            }
+        }
+    },
+    "$defs": {
+        "enums": {
+            "DscpValue": {
+                "enum": [
+                    "DSCP_0",
+                    "DSCP_1",
+                    "DSCP_2",
+                    "DSCP_3",
+                    "DSCP_4",
+                    "DSCP_5",
+                    "DSCP_6",
+                    "DSCP_7",
+                    "DSCP_8",
+                    "DSCP_9",
+                    "DSCP_10",
+                    "DSCP_11",
+                    "DSCP_12",
+                    "DSCP_13",
+                    "DSCP_14",
+                    "DSCP_15",
+                    "DSCP_16",
+                    "DSCP_17",
+                    "DSCP_18",
+                    "DSCP_19",
+                    "DSCP_20",
+                    "DSCP_21",
+                    "DSCP_22",
+                    "DSCP_23",
+                    "DSCP_24",
+                    "DSCP_25",
+                    "DSCP_26",
+                    "DSCP_27",
+                    "DSCP_28",
+                    "DSCP_29",
+                    "DSCP_30",
+                    "DSCP_31",
+                    "DSCP_32",
+                    "DSCP_33",
+                    "DSCP_34",
+                    "DSCP_35",
+                    "DSCP_36",
+                    "DSCP_37",
+                    "DSCP_38",
+                    "DSCP_39",
+                    "DSCP_40",
+                    "DSCP_41",
+                    "DSCP_42",
+                    "DSCP_43",
+                    "DSCP_44",
+                    "DSCP_45",
+                    "DSCP_46",
+                    "DSCP_47",
+                    "DSCP_48",
+                    "DSCP_49",
+                    "DSCP_50",
+                    "DSCP_51",
+                    "DSCP_52",
+                    "DSCP_53",
+                    "DSCP_54",
+                    "DSCP_55",
+                    "DSCP_56",
+                    "DSCP_57",
+                    "DSCP_58",
+                    "DSCP_59",
+                    "DSCP_60",
+                    "DSCP_61",
+                    "DSCP_62",
+                    "DSCP_63",
+                    "NONE"
+                ]
+            }
+        }
+    }
+}

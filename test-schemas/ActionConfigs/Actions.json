@@ -1,0 +1,23 @@
+{
+    "Actions": {
+        "description": "An array of all the actions that are executed if the outcome of expression processing returns false",
+        "type": "array",
+        "items": {
+            "type": "object",
+            "oneOf": [
+                {
+                    "$ref": "./Allow.json#"
+                },
+                {
+                    "$ref": "./Drop.json#"
+                },
+                {
+                    "$ref": "./MarkDscp.json#"
+                },
+                {
+                    "$ref": "./CallChain.json#"
+                }
+            ]
+        }
+    }
+}

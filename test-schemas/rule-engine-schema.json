@@ -1,0 +1,102 @@
+{
+    "title": "Access Gateway Rules Profile schema",
+    "description": "Schema used to describe and validate an Access Gateway Rules Profile document",
+    "type": "object",
+    "propertyNames": {
+        "enum": [
+            "$schema",
+            "entryPointRuleChainNames",
+            "expressions",
+            "ruleChains"
+        ]
+    },
+    "required": [
+        "entryPointRuleChainNames",
+        "expressions",
+        "ruleChains"
+    ],
+    "properties": {
+        "entryPointRuleChainNames": {
+            "description": "List of rule chain names to be called when the profile is executed",
+            "uniqueItems": true,
+            "minItems": 1,
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "$ref": "./ExpressionConfigs/Expressions.json",
+        "ruleChains": {
+            "description": "An array of rule chains and its rules",
+            "$ref": "#/$defs/RuleChains"
+        }
+    },
+    "$defs": {
+        "RuleChains": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "propertyNames": {
+                    "enum": [
+                        "name",
+                        "rules"
+                    ]
+                },
+                "required": [
+                    "name",
+                    "rules"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Defines a custom name give to the rule chain. Can be used by other rule chains to call this chain or be used as an entry point rule chain",
+                        "type": "string"
+                    },
+                    "rules": {
+                        "description": "Array containing all the rules in a particular chain",
+                        "$ref": "#/$defs/Rules"
+                    }
+                }
+            }
+        },
+        "Rules": {
+            "description": "Array containing all the rules in a particular chain",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "expressionName",
+                    "name",
+                    "actions"
+                ],
+                "properties": {
+                    "expressionName": {
+                        "description": "Name of expression to be used to decide the actions performed by this rule",
+                        "type": "string"
+                    },
+                    "name": {
+                        "description": "A custom name given to the rule",
+                        "type": "string"
+                    },
+                    "actions": {
+                        "description": "An array of all the actions executed by the rule",
+                        "type": "object",
+                        "propertyNames": {
+                            "enum": [
+                                "trueActions",
+                                "falseActions"
+                            ]
+                        },
+                        "properties": {
+                            "trueActions": {
+                                "$ref": "./ActionConfigs/Actions.json#/Actions"
+                            },
+                            "falseActions": {
+                                "$ref": "./ActionConfigs/Actions.json#/Actions"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
