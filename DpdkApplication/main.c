@@ -62,6 +62,7 @@ typedef struct PortInfo
     size_t droppedPackets;
     size_t bandwidthLimit;
     size_t bandwidthRate;
+    size_t dropIpsCount;
 } PortInfo;
 
 // Forward declarations
@@ -220,6 +221,7 @@ int main(int argc, char *argv[])
         ports[portIndex].rxPacketRate = 0;
         ports[portIndex].txPacketRate = 0;
         ports[portIndex].droppedPackets = 0;
+        ports[portIndex].dropIpsCount = dropAddrCount;
         ports[portIndex].bandwidthLimit = bandwidthLimit;
         ports[portIndex].mutex = (pthread_mutex_t)PTHREAD_MUTEX_INITIALIZER;
         memcpy(ports[portIndex].dropIPs, dropIPs, sizeof(dropIPs));
@@ -336,7 +338,7 @@ static int portThread(void *arg)
                     pthread_mutex_lock(&portInfo->mutex);
                     portInfo->bandwidthRate += rte_pktmbuf_pkt_len(bufferArray[counter]);
                     pthread_mutex_unlock(&portInfo->mutex);
-                    if ((processPacket(bufferArray[counter], portInfo, portInfo->dropIPs, MAX_DROP_IPS) != 0) ||
+                    if ((processPacket(bufferArray[counter], portInfo, portInfo->dropIPs, portInfo->dropIpsCount) != 0) ||
                         (portInfo->bandwidthRate > portInfo->bandwidthLimit))
                     {
                         rte_pktmbuf_free(bufferArray[counter]);
