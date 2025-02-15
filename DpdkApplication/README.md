@@ -16,6 +16,7 @@ This application is a high-performance network packet processing tool built usin
 
 Ensure your system meets the following prerequisites:
 
+- A multi-core machine with a minimum of three CPU cores.
 - A Linux-based operating system (e.g., Ubuntu, CentOS).
 - GCC (G++) compiler.
 - CMake build system.
@@ -34,16 +35,6 @@ sudo apt update && sudo apt install -y build-essential cmake libnuma-dev
 ### 2. Install and Configure DPDK
 
 Refer to the [DPDK documentation](https://doc.dpdk.org/guides/linux_gsg/index.html) for detailed instructions.
-
-```sh
-sudo apt install -y dpdk dpdk-dev
-```
-
-Configure hugepages:
-
-```sh
-echo 1024 | sudo tee /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-```
 
 ### 3. Clone the Repository
 
@@ -71,7 +62,6 @@ Usage: ./DpdkApp [OPTIONS]
   -d, --device-list <ids>   Specify network device IDs (comma-separated).
   -a, --address-list <ips>  Specify IPs to drop (comma-separated).
   -b, --bandwidth <bps>     Set bandwidth limit in bits per second.
-  -c, --core-mask <mask>    Specify core mask for DPDK threads.
 ```
 
 ### Running the Application

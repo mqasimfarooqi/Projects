@@ -34,7 +34,7 @@ static pthread_mutex_t logMutex = PTHREAD_MUTEX_INITIALIZER;
 #define STATS_PRINT_INTERVAL 1
 #define MAX_BANDWIDTH_LIMIT 100000000
 #define MAX_DROP_IPS 10
-#define DEFAULT_CORE_MASK "0x3"
+#define DEFAULT_CORE_MASK "0x7"
 #define LOG_FILE "DpdkApp.log"
 
 // Command-line options
@@ -44,7 +44,6 @@ const struct option longOptions[] = {
     {"device-list", required_argument, 0, 'd'},
     {"address-list", required_argument, 0, 'a'},
     {"bandwidth", required_argument, 0, 'b'},
-    {"core-mask", required_argument, 0, 'c'},
     {0, 0, 0, 0}};
 
 // Structure to hold port information
@@ -111,7 +110,7 @@ int main(int argc, char *argv[])
     LOG("Log file opened successfully");
 
     // Parse command-line arguments, including -c
-    while ((opt = getopt_long(argc, argv, "hLc:d:a:b:", longOptions, &optionIndex)) != -1)
+    while ((opt = getopt_long(argc, argv, "hL:d:a:b:", longOptions, &optionIndex)) != -1)
     {
         switch (opt)
         {
@@ -130,8 +129,6 @@ int main(int argc, char *argv[])
         case 'b':
             bandwidthLimit = strtoull(optarg, NULL, 10);
             break;
-        case 'c':
-            coreMask = optarg;
             break;
         default:
             printUsage(argv[0]);
@@ -568,7 +565,6 @@ void printUsage(const char *progName)
     printf("-b, --bandwidth\t\t\tBandwidth limit in bytes per second (default: 100000000)\n");
     printf("-d, --device-list\t\tComma-separated list of two DPDK port IDs (e.g 0,1)\n");
     printf("-a, --address-list\t\tComma-separated list of IP addresses to drop (e.g 192.168.1.10,192.168.1.11)\n");
-    printf("-c, --core-mask\t\t\tHexadecimal core mask for DPDK (e.g 0x3)\n");
 }
 
 // Thread function to calculate rates
