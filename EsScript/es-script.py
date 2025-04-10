@@ -6,7 +6,7 @@ import os
 SOURCE_ES_HOSTS = ['http://192.168.40.12:9200']
 DEST_ES_HOSTS = ['http://127.0.0.1:9200']
 SOURCE_INDEX_NAME = "ag-prod-5520-report-engine-table-data-batches"
-DEST_INDEX_NAME = "ag-prod-5520-report-engine-table-data-batches-backup"
+DEST_INDEX_NAME = "ag-prod-5520-report-engine-table-data-batches"
 TIMESTAMP_FILE = "/tmp/last_processed_submit_time.txt"
 
 def get_last_processed_submit_time(custom_initial_submit_time):
