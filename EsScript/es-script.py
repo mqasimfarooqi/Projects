@@ -1,17 +1,13 @@
 from elasticsearch import Elasticsearch
-import time
-import json
 from datetime import datetime
-import sys  # Import the sys module for exiting
+import sys
 
-# Configuration for the source and destination Elasticsearch clusters
-SOURCE_ES_HOSTS = ['http://192.168.40.12:9200']  # Replace with the actual IP and port
-DEST_ES_HOSTS = ['http://127.0.0.1:9200']  # Replace with the actual IP and port
+SOURCE_ES_HOSTS = ['http://192.168.40.12:9200']
+DEST_ES_HOSTS = ['http://127.0.0.1:9200']
 SOURCE_INDEX_NAME = "ag-prod-5520-report-engine-table-data-batches"
-DEST_INDEX_NAME = "ag-prod-5520-report-engine-table-data-batches-backup"  # You might want a different name
-TIMESTAMP_FILE = "/tmp/last_processed_submit_time.txt"  # Adjust the path as needed
+DEST_INDEX_NAME = "ag-prod-5520-report-engine-table-data-batches-backup"
+TIMESTAMP_FILE = "/tmp/last_processed_submit_time.txt"
 
-# Set a custom initial submitTime here (in Unix epoch seconds)
 CUSTOM_INITIAL_SUBMIT_TIME = 1744303316
 
 def get_last_processed_submit_time():
@@ -26,7 +22,7 @@ def get_last_processed_submit_time():
     except ValueError:
         print(f"Error reading timestamp from file. Using custom initial submitTime.")
         return CUSTOM_INITIAL_SUBMIT_TIME
-    return CUSTOM_INITIAL_SUBMIT_TIME # Return custom if file is empty
+    return CUSTOM_INITIAL_SUBMIT_TIME
 
 def update_last_processed_submit_time(timestamp):
     with open(TIMESTAMP_FILE, 'w') as f:
@@ -93,4 +89,3 @@ def copy_new_documents():
 if __name__ == "__main__":
     while True:
         copy_new_documents()
-        time.sleep(0.5)
