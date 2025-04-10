@@ -2,6 +2,7 @@ from elasticsearch import Elasticsearch
 import time
 import json
 from datetime import datetime
+import sys  # Import the sys module for exiting
 
 # Configuration for the source and destination Elasticsearch clusters
 SOURCE_ES_HOSTS = ['http://192.168.40.12:9200']  # Replace with the actual IP and port
@@ -38,7 +39,7 @@ def copy_new_documents():
     last_processed_submit_time = get_last_processed_submit_time()
     if (last_processed_submit_time != CUSTOM_INITIAL_SUBMIT_TIME):
         print(f"Last processed submitTime: {last_processed_submit_time} ({datetime.fromtimestamp(last_processed_submit_time)})")
-    
+
     new_last_processed_submit_time = last_processed_submit_time
 
     query = {
@@ -74,17 +75,22 @@ def copy_new_documents():
                 from elasticsearch import helpers
                 helpers.bulk(dest_es, docs_to_index)
                 print(f"Copied {len(docs_to_index)} new documents. Last processed submitTime updated to: {new_last_processed_submit_time} ({datetime.fromtimestamp(new_last_processed_submit_time) if new_last_processed_submit_time > 0 else 'N/A'})")
+                update_last_processed_submit_time(new_last_processed_submit_time)
             else:
-                print("No new documents found since the last run.")
+                # Exit the script if no new documents
+                print("No new documents found since the last run. Exiting.")
+                sys.exit(0)
         else:
-            print("No documents found matching the criteria.")
-
-        update_last_processed_submit_time(new_last_processed_submit_time)
+            # Exit the script if no matching documents
+            print("No documents found matching the criteria. Exiting.")
+            sys.exit(0) 
 
     except Exception as e:
+        # Exit with a non-zero status to indicate failure
         print(f"An error occurred: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     while True:
         copy_new_documents()
-        time.sleep(1)
+        time.sleep(0.5)
