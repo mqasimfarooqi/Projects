@@ -64,7 +64,7 @@ def copy_documents(default_start_time):
                 source_doc = hit['_source']
 
                 # Placeholder for any modifications you want to make
-                modified_doc = source_doc  # <- Modify here if needed
+                modified_doc = source_doc
 
                 # Update max timestamp
                 doc_time = get_nested_value(modified_doc, time_field)
