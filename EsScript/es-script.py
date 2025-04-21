@@ -16,6 +16,20 @@ INDICES_TO_COPY = [
     # {"source": "ag-prod-5520-report-engine-device-items", "dest": "ag-prod-5520-report-engine-device-items", "time_field": "timestamp"},
 ]
 
+# Define the node to be added to each document
+# It's defined here so it's easily accessible and modifiable if needed
+AG_CORE_INFO_NODE = {
+    "_agCoreInfo": {
+        "vantage": {
+            "application": {"id": 5520, "name": "gee-holmdeldc-ag3-ag-core"},
+            "customer": {"id": 1, "name": "Anuvu"},
+            "environment": "prod",
+            "facility": {"id": 3714, "name": "Aviation Holmdel Datacenter"}
+        },
+        "version": "1.4.0+282"
+    }
+}
+
 def get_last_processed_time(default_time_str):
     """Reads the last processed timestamp from the file, or returns the default."""
     try:
@@ -55,7 +69,7 @@ def get_nested_value(data, dotted_key):
         return None
 
 def copy_documents(default_start_time):
-    """Copies documents from source to destination ES, continuing until caught up."""
+    """Copies documents from source to destination ES, adding _agCoreInfo node."""
     try:
         source_es = Elasticsearch(hosts=SOURCE_ES_HOSTS, request_timeout=REQUEST_TIMEOUT)
         dest_es = Elasticsearch(hosts=DEST_ES_HOSTS, request_timeout=REQUEST_TIMEOUT)
@@ -66,9 +80,7 @@ def copy_documents(default_start_time):
         print(f"Error connecting to Elasticsearch: {e}")
         sys.exit(1)
 
-    # Get the timestamp from which to start this run
     last_processed_time_from_file = get_last_processed_time(default_start_time)
-    # This will track the highest timestamp processed across all indices in this run
     overall_max_time_this_run = last_processed_time_from_file
     total_docs_copied_this_run = 0
 
@@ -80,22 +92,18 @@ def copy_documents(default_start_time):
         time_field = index_info["time_field"]
         docs_copied_for_index = 0
         index_fully_caught_up = False
-
-        # Use the timestamp from the file as the starting point for this index's first query
         current_start_time_for_index = last_processed_time_from_file
-        # Track the max time found specifically for this index during this run
         max_time_for_index = last_processed_time_from_file
 
         print(f"\n--- Processing index: {source_index} -> {dest_index} ---")
         print(f"Starting search for {source_index} with {time_field} > {current_start_time_for_index}")
 
-        # Inner loop: Keep fetching batches for the current index until no more new docs are found
-        while True:
+        while True: # Inner loop for batches within an index
             query = {
                 "query": {
                     "range": {
                         time_field: {
-                            "gt": current_start_time_for_index # Use the timestamp of the last doc seen *in the previous batch for this index*
+                            "gt": current_start_time_for_index
                         }
                     }
                 },
@@ -105,7 +113,7 @@ def copy_documents(default_start_time):
 
             try:
                 print(f"Searching {source_index} for batch with {time_field} > {current_start_time_for_index}...")
-                res = source_es.search(index=source_index, body=query)
+                res = source_es.search(index=source_index, body=query, request_timeout=REQUEST_TIMEOUT) # Added timeout here too
                 hits = res['hits']['hits']
                 num_hits = len(hits)
 
@@ -115,15 +123,21 @@ def copy_documents(default_start_time):
                     break # Exit the inner while loop for this index
 
                 docs_to_index = []
-                batch_max_time = current_start_time_for_index # Initialize with the lower bound for this batch
+                batch_max_time = current_start_time_for_index
 
                 for hit in hits:
                     source_doc = hit['_source']
                     doc_time = get_nested_value(source_doc, time_field)
 
                     if doc_time is None:
-                         print(f"Warning: Skipping document ID {hit['_id']} due to missing time field '{time_field}'.")
-                         continue # Skip docs where time field is missing
+                        print(f"Warning: Skipping document ID {hit['_id']} due to missing time field '{time_field}'.")
+                        continue
+
+                    # --- MODIFICATION START ---
+                    # Add the predefined _agCoreInfo node to the document's source
+                    # Using update() handles potential existing key, though unlikely here.
+                    source_doc.update(AG_CORE_INFO_NODE)
+                    # --- MODIFICATION END ---
 
                     # Update the maximum time seen in this specific batch
                     if doc_time > batch_max_time:
@@ -133,61 +147,64 @@ def copy_documents(default_start_time):
                     docs_to_index.append({
                         "_index": dest_index,
                         "_id": hit["_id"],
-                        "_source": source_doc # Use original source doc, modify if needed
+                        "_source": source_doc # source_doc now contains the added node
                     })
 
                 if docs_to_index:
                     try:
                         print(f"Indexing {len(docs_to_index)} documents to {dest_index}...")
-                        helpers.bulk(dest_es, docs_to_index, request_timeout=REQUEST_TIMEOUT)
-                        docs_copied_for_index += len(docs_to_index)
-                        total_docs_copied_this_run += len(docs_to_index)
+                        success, errors = helpers.bulk(dest_es, docs_to_index,
+                                                       stats_only=True, # Get counts instead of full response
+                                                       request_timeout=REQUEST_TIMEOUT)
+                        
+                        docs_copied_for_index += success # Increment by successful docs
+                        total_docs_copied_this_run += success
 
-                        # Update the max time seen for this index
+                        if errors:
+                           # Note: helpers.bulk with stats_only=True doesn't return detailed errors easily.
+                           # If detailed error handling is needed, remove stats_only=True
+                           # and parse the returned tuple (which includes error details).
+                           print(f"Warning: Encountered {len(errors)} errors during bulk indexing for {dest_index}. Check ES logs for details.")
+                           # For more robust handling, you might want to log failed IDs if possible.
+
+                        # Update max times regardless of minor bulk errors
                         max_time_for_index = batch_max_time
-                        # Update the overall max time seen across all indices in this run
                         if max_time_for_index > overall_max_time_this_run:
-                             overall_max_time_this_run = max_time_for_index
+                            overall_max_time_this_run = max_time_for_index
 
-                        print(f"Successfully indexed {len(docs_to_index)} docs. Last timestamp in batch: {batch_max_time}. Total for {source_index}: {docs_copied_for_index}")
+                        print(f"Successfully indexed {success} docs. Last timestamp in batch: {batch_max_time}. Total for {source_index}: {docs_copied_for_index}")
 
-                        # Set the start time for the *next* query for *this index* to the latest time seen in *this* batch
+                        # Set the start time for the next query
                         current_start_time_for_index = batch_max_time
 
-                    except helpers.BulkIndexError as bie:
+                    except helpers.BulkIndexError as bie: # This might not be hit if stats_only=True
                         print(f"Bulk indexing error occurred for {dest_index}: {len(bie.errors)} errors.")
-                        # Log first few errors for debugging
                         for i, error in enumerate(bie.errors[:5]):
-                             print(f"  Error {i+1}: {error}")
-                        # Decide if you want to retry, skip, or halt. Here we'll continue to the next batch.
+                            print(f"  Error {i+1}: {error}")
                         print("Continuing to next batch despite errors...")
-                        current_start_time_for_index = batch_max_time # Ensure progress past the problematic batch
+                        current_start_time_for_index = batch_max_time # Ensure progress
                     except Exception as e_bulk:
-                        print(f"Error during bulk indexing to {dest_index}: {e_bulk}")
-                        # Potentially break or implement retry logic
+                        print(f"Critical error during bulk indexing to {dest_index}: {e_bulk}")
                         break # Exit inner loop for this index on critical bulk error
                 else:
-                    # This case should technically be covered by num_hits == 0, but good as a safeguard
-                    print(f"No valid documents found in the batch for {source_index} despite {num_hits} hits (check time field extraction).")
-                    break # Exit inner while loop
-
+                    # This case might occur if all hits had missing time fields
+                    print(f"No valid documents prepared for indexing in this batch for {source_index}.")
+                    # No need to break here, the next search will use the same start time
 
             except Exception as e_search:
                 print(f"Error searching index {source_index}: {e_search}")
-                # Decide how to handle search errors, e.g., retry, skip index, exit
                 break # Exit inner while loop for this index on search error
 
         # End of inner while loop for the current index
         if index_fully_caught_up:
-             print(f"--- Finished processing index: {source_index}. Copied {docs_copied_for_index} documents. Caught up. ---")
+            print(f"--- Finished processing index: {source_index}. Copied {docs_copied_for_index} documents. Caught up. ---")
         else:
-             print(f"--- Finished processing index: {source_index} due to error or interruption. Copied {docs_copied_for_index} documents. ---")
+            print(f"--- Finished processing index: {source_index} due to error or interruption. Copied {docs_copied_for_index} documents. ---")
 
     # After processing all indices
     print(f"\n--- Full copy cycle completed ---")
     print(f"Total documents copied across all indices in this run: {total_docs_copied_this_run}")
 
-    # Update the timestamp file *only if* we processed any documents beyond the initial start time
     if overall_max_time_this_run > last_processed_time_from_file:
         print(f"Highest timestamp processed in this run: {overall_max_time_this_run}")
         update_last_processed_time(overall_max_time_this_run)
@@ -203,12 +220,13 @@ if __name__ == "__main__":
         sys.exit(1)
 
     initial_timestamp_arg = sys.argv[1]
-    # Basic validation of the timestamp format (optional but recommended)
     try:
-        datetime.fromisoformat(initial_timestamp_arg.replace('Z', '+00:00'))
+        # Allow for timezone offset, but default to UTC if 'Z' is present
+        ts_to_validate = initial_timestamp_arg.replace('Z', '+00:00')
+        datetime.fromisoformat(ts_to_validate)
     except ValueError:
         print(f"Error: Invalid ISO8601 timestamp format provided: '{initial_timestamp_arg}'")
-        print("Please use the format YYYY-MM-DDTHH:MM:SSZ (e.g., 2025-04-01T00:00:00Z)")
+        print("Please use the format YYYY-MM-DDTHH:MM:SSZ or YYYY-MM-DDTHH:MM:SS+HH:MM (e.g., 2025-04-01T00:00:00Z)")
         sys.exit(1)
 
     copy_documents(initial_timestamp_arg)
