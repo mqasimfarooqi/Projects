@@ -20,7 +20,7 @@ def get_last_processed_submit_time(custom_initial_submit_time):
         print(f"Timestamp file '{TIMESTAMP_FILE}' not found. Using custom initial submitTime.")
     except ValueError:
         print(f"Error reading timestamp from file. Using custom initial submitTime.")
-    
+
     print(f"Using custom initial submitTime: {custom_initial_submit_time} ({datetime.fromtimestamp(custom_initial_submit_time)})")
     return custom_initial_submit_time
 
@@ -61,7 +61,10 @@ def copy_new_documents(custom_initial_submit_time):
                 action = {
                     "_index": DEST_INDEX_NAME,
                     "_id": hit['_id'],
-                    "_source": source
+                    "_source": {
+                        "submitTime": source['submitTime'],
+                        "createTime": source['createTime'],
+                    }
                 }
                 docs_to_index.append(action)
                 if "submitTime" in source:
