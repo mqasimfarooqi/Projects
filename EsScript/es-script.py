@@ -7,13 +7,13 @@ import time
 BATCH_SIZE = 1000
 REQUEST_TIMEOUT = 120
 DEST_ES_HOSTS = ['http://127.0.0.1:9200']
-SOURCE_ES_HOSTS = ['http://192.168.40.12:9200']
+SOURCE_ES_HOSTS = ['http://192.168.40.7:9200']
 TIMESTAMP_FILE = "/tmp/last_processed_time.txt"
 
 INDICES_TO_COPY = [
-    {"source": "ag-prod-5520-events", "dest": "ag-prod-5523-events", "time_field": "id.timestamp"},
+    # {"source": "ag-prod-5520-events", "dest": "ag-prod-5523-events", "time_field": "id.timestamp"},
     {"source": "ag-prod-5520-network-indicators", "dest": "ag-prod-5520-network-indicators", "time_field": "endTime"},
-    {"source": "ag-prod-5520-report-engine-device-items", "dest": "ag-prod-5520-report-engine-device-items", "time_field": "timestamp"},
+    # {"source": "ag-prod-5520-report-engine-device-items", "dest": "ag-prod-5520-report-engine-device-items", "time_field": "timestamp"},
 ]
 
 def get_last_processed_time(default_time_str):
