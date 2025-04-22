@@ -4,11 +4,11 @@ from copy import deepcopy
 
 # Constants for source and destination Elasticsearch configurations
 SRC_ES_HOST = "http://192.168.40.14:9200"
-DEST_ES_HOST = "http://192.168.40.14:9200"
+DEST_ES_HOST = "http://127.0.0.1:9200"
 
 # The index to copy from and to
-SRC_INDEX = "change"
-DEST_INDEX = "change"
+SRC_INDEX = "ag-prod-2542-events-at-4"
+DEST_INDEX = "ag-prod-2542-events-at-4-sanitized"
 
 # Batch size for bulk operations
 BATCH_SIZE = 1000
@@ -19,7 +19,7 @@ dest_es = Elasticsearch([DEST_ES_HOST])
 
 # Set up logging
 logging.basicConfig(
-    filename='failed_docs.log',
+    filename='script-logs.log',
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
@@ -42,7 +42,7 @@ AG_CORE_INFO = {
                 "name": "Aviation Holmdel Datacenter"
             }
         },
-        "version": None  # Do not overwrite version if it's already set
+        "version": None
     }
 }
 
@@ -53,6 +53,35 @@ def deep_merge_ag_core_info(existing, update):
         elif value not in [None, "", 0]:
             existing[key] = value
     return existing
+
+def log_agcoreinfo_changes(doc_id, original, updated):
+    def flatten(d, parent_key=''):
+        items = []
+        for k, v in d.items():
+            new_key = f"{parent_key}.{k}" if parent_key else k
+            if isinstance(v, dict):
+                items.extend(flatten(v, new_key).items())
+            else:
+                items.append((new_key, v))
+        return dict(items)
+
+    original_flat = flatten(original)
+    updated_flat = flatten(updated)
+
+    already_present = []
+    overwritten = []
+
+    for key, new_val in updated_flat.items():
+        old_val = original_flat.get(key, None)
+        if old_val == new_val:
+            already_present.append(key)
+        elif key in original_flat:
+            overwritten.append((key, old_val, new_val))
+
+    if already_present:
+        logging.info(f"Doc ID {doc_id}: Fields already present in _agCoreInfo: {already_present}")
+    if overwritten:
+        logging.info(f"Doc ID {doc_id}: Fields overwritten in _agCoreInfo: {[(k, ov, nv) for k, ov, nv in overwritten]}")
 
 def copy_documents():
     scroll = "2m"
@@ -89,7 +118,9 @@ def copy_documents():
             else:
                 existing_ag_core_info = {}
 
+            original_ag_core_info = deepcopy(existing_ag_core_info)
             merged_ag_core_info = deep_merge_ag_core_info(deepcopy(existing_ag_core_info), AG_CORE_INFO["_agCoreInfo"])
+            log_agcoreinfo_changes(doc_id, original_ag_core_info, merged_ag_core_info)
             source["_agCoreInfo"] = merged_ag_core_info
 
             actions.append({
@@ -126,7 +157,6 @@ def copy_documents():
     print(f"Total documents copied successfully: {total_success}")
     print(f"Total documents failed: {total_failed}")
     print(f"Documents that already had _agCoreInfo and were merged: {already_had_agcoreinfo_count}")
-
 
 if __name__ == "__main__":
     copy_documents()
