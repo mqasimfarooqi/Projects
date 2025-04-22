@@ -1,9 +1,10 @@
 from elasticsearch import Elasticsearch, helpers
 import logging
+from copy import deepcopy
 
 # Constants for source and destination Elasticsearch configurations
 SRC_ES_HOST = "http://192.168.40.14:9200"
-DEST_ES_HOST = "http://127.0.0.1:9200"
+DEST_ES_HOST = "http://192.168.40.14:9200"
 
 # The index to copy from and to
 SRC_INDEX = "change"
@@ -41,10 +42,17 @@ AG_CORE_INFO = {
                 "name": "Aviation Holmdel Datacenter"
             }
         },
-        "version": None
+        "version": None  # Do not overwrite version if it's already set
     }
 }
 
+def deep_merge_ag_core_info(existing, update):
+    for key, value in update.items():
+        if isinstance(value, dict):
+            existing[key] = deep_merge_ag_core_info(existing.get(key, {}), value)
+        elif value not in [None, "", 0]:
+            existing[key] = value
+    return existing
 
 def copy_documents():
     scroll = "2m"
@@ -74,13 +82,15 @@ def copy_documents():
             doc_id = doc["_id"]
             source = doc["_source"]
 
-            # Log and overwrite _agCoreInfo if it exists
             if "_agCoreInfo" in source:
                 already_had_agcoreinfo_count += 1
-                logging.info(f"_agCoreInfo exists in doc ID: {doc_id}, overwriting.")
+                logging.info(f"_agCoreInfo exists in doc ID: {doc_id}, merging fields.")
+                existing_ag_core_info = source["_agCoreInfo"]
+            else:
+                existing_ag_core_info = {}
 
-            # Overwrite _agCoreInfo
-            source["_agCoreInfo"] = AG_CORE_INFO["_agCoreInfo"]
+            merged_ag_core_info = deep_merge_ag_core_info(deepcopy(existing_ag_core_info), AG_CORE_INFO["_agCoreInfo"])
+            source["_agCoreInfo"] = merged_ag_core_info
 
             actions.append({
                 "_op_type": "index",
@@ -115,7 +125,7 @@ def copy_documents():
     print("\nCopy completed.")
     print(f"Total documents copied successfully: {total_success}")
     print(f"Total documents failed: {total_failed}")
-    print(f"Documents that already had _agCoreInfo and were overwritten: {already_had_agcoreinfo_count}")
+    print(f"Documents that already had _agCoreInfo and were merged: {already_had_agcoreinfo_count}")
 
 
 if __name__ == "__main__":
