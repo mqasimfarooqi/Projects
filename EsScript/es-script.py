@@ -4,7 +4,7 @@ from copy import deepcopy
 
 # Constants for source and destination Elasticsearch configurations
 SRC_ES_HOST = "http://192.168.40.14:9200"
-DEST_ES_HOST = "http://192.168.40.14:9200"
+DEST_ES_HOST = "http://127.0.0.1:9200"
 
 # The index to copy from and to
 SRC_INDEX = "ag-prod-2542-events-at-4"
@@ -71,18 +71,13 @@ def log_agcoreinfo_changes(doc_id, original, updated):
     original_flat = flatten(original)
     updated_flat = flatten(updated)
 
-    already_present = []
     overwritten = []
 
     for key, new_val in updated_flat.items():
         old_val = original_flat.get(key, None)
-        if old_val == new_val:
-            already_present.append(key)
-        elif key in original_flat:
+        if key in original_flat and old_val != new_val:
             overwritten.append((key, old_val, new_val))
 
-    if already_present:
-        logging.info(f"Doc ID {doc_id}: Fields already present in _agCoreInfo: {already_present}")
     if overwritten:
         logging.info(f"Doc ID {doc_id}: Fields overwritten in _agCoreInfo: {[(k, ov, nv) for k, ov, nv in overwritten]}")
 
