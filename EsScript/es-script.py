@@ -7,8 +7,8 @@ SRC_ES_HOST = "http://192.168.40.14:9200"
 DEST_ES_HOST = "http://192.168.40.14:9200"
 
 # The index to copy from and to
-SRC_INDEX = "ag-prod-2542-events-at-4"
-DEST_INDEX = "ag-prod-2542-events-at-4-sanitized"
+SRC_INDEX = "change"
+DEST_INDEX = "change"
 
 # Batch size for bulk operations
 BATCH_SIZE = 1000
