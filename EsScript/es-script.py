@@ -3,12 +3,12 @@ import logging
 from copy import deepcopy
 
 # Constants for source and destination Elasticsearch configurations
-SRC_ES_HOST = "http://192.168.40.14:9200"
+SRC_ES_HOST = "http://127.0.0.1:9200"
 DEST_ES_HOST = "http://127.0.0.1:9200"
 
 # The index to copy from and to
-SRC_INDEX = "ag-prod-2542-events-at-4"
-DEST_INDEX = "ag-prod-2542-events-at-4-sanitized"
+SRC_INDEX = "ag-prod-2542-report-engine-device-items-at-4"
+DEST_INDEX = "ag-prod-2542-report-engine-device-items-at-4-sanitized"
 
 # Batch size for bulk operations
 BATCH_SIZE = 1000
