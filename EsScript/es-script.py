@@ -34,7 +34,7 @@ AG_CORE_INFO = {
                 "name": "Aviation Holmdel Datacenter"
             }
         },
-        "version": "null"
+        "version": None
     }
 }
 
