@@ -2,24 +2,28 @@ from elasticsearch import Elasticsearch, helpers
 import logging
 
 # Constants for source and destination Elasticsearch configurations
-SRC_ES_HOST = "http://192.168.40.14:9200"  # Replace with the source Elasticsearch host and port
-DEST_ES_HOST = "http://127.0.0.1:9200"     # Replace with the destination Elasticsearch host and port
+SRC_ES_HOST = "http://192.168.40.14:9200"
+DEST_ES_HOST = "http://127.0.0.1:9200"
 
 # The index to copy from and to
-SRC_INDEX = "change"   # Replace with the source index name
-DEST_INDEX = "change"  # Replace with the destination index name
+SRC_INDEX = "change"
+DEST_INDEX = "change"
 
 # Batch size for bulk operations
 BATCH_SIZE = 1000
 
-# Connect to the source and destination Elasticsearch instances
+# Set up Elasticsearch clients
 src_es = Elasticsearch([SRC_ES_HOST])
 dest_es = Elasticsearch([DEST_ES_HOST])
 
-# Set up logging to log failed documents for troubleshooting
-logging.basicConfig(filename='failed_docs.log', level=logging.ERROR)
+# Set up logging
+logging.basicConfig(
+    filename='failed_docs.log',
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
-# _agCoreInfo block to be added to each document
+# _agCoreInfo block to be added or overwritten in each document
 AG_CORE_INFO = {
     "_agCoreInfo": {
         "vantage": {
@@ -41,45 +45,78 @@ AG_CORE_INFO = {
     }
 }
 
+
 def copy_documents():
-    scroll = "2m"  # Scroll time
-    size = BATCH_SIZE    # Batch size to fetch per scroll
+    scroll = "2m"
+    size = BATCH_SIZE
     query = {"query": {"match_all": {}}}
 
+    # Initial search to get the scroll ID
     result = src_es.search(index=SRC_INDEX, body=query, scroll=scroll, size=size)
     scroll_id = result['_scroll_id']
     total_docs = result['hits']['total']['value']
-    copied_docs = 0
 
     print(f"Total documents to copy: {total_docs}")
 
-    while len(result['hits']['hits']) > 0:
-        fetched_docs = len(result['hits']['hits'])
+    total_success = 0
+    total_failed = 0
+    already_had_agcoreinfo_count = 0
+    batch_num = 0
 
+    while True:
+        hits = result['hits']['hits']
+        if not hits:
+            break
+
+        batch_num += 1
         actions = []
-        for doc in result['hits']['hits']:
+        for doc in hits:
+            doc_id = doc["_id"]
             source = doc["_source"]
-            source.update(AG_CORE_INFO)  # Add the _agCoreInfo block to each document
+
+            # Log and overwrite _agCoreInfo if it exists
+            if "_agCoreInfo" in source:
+                already_had_agcoreinfo_count += 1
+                logging.info(f"_agCoreInfo exists in doc ID: {doc_id}, overwriting.")
+
+            # Overwrite _agCoreInfo
+            source["_agCoreInfo"] = AG_CORE_INFO["_agCoreInfo"]
+
             actions.append({
                 "_op_type": "index",
                 "_index": DEST_INDEX,
+                "_id": doc_id,  # Retain original ID
                 "_source": source
             })
 
         try:
-            success, failed = helpers.bulk(dest_es, actions)
-            copied_docs += success
-            print(f"Fetched {fetched_docs} docs, copied {success} successfully, {failed} failed.")
-        except helpers.BulkIndexError as e:
-            print(f"Bulk indexing error: {e}")
-            for doc in result['hits']['hits']:
-                logging.error(f"Failed to index document: {doc['_id']} - {doc['_source']}")
+            response = helpers.bulk(dest_es, actions, raise_on_error=False, raise_on_exception=False)
+            success_count = response[0]
+            failure_count = len(response[1])
+            total_success += success_count
+            total_failed += failure_count
 
+            print(f"Batch {batch_num}: {len(hits)} docs processed | {success_count} success | {failure_count} failed")
+
+            for fail in response[1]:
+                doc_id = fail.get('index', {}).get('_id', 'UNKNOWN')
+                reason = fail.get('index', {}).get('error', {}).get('reason', 'No reason provided')
+                logging.error(f"Failed to index doc ID {doc_id}: {reason}")
+
+        except Exception as e:
+            logging.exception("Exception occurred during bulk indexing")
+
+        # Get next scroll page
         result = src_es.scroll(scroll_id=scroll_id, scroll=scroll)
 
+    # Clear the scroll context
     src_es.clear_scroll(scroll_id=scroll_id)
-    print(f"\nTotal documents copied: {copied_docs}")
+
+    print("\nCopy completed.")
+    print(f"Total documents copied successfully: {total_success}")
+    print(f"Total documents failed: {total_failed}")
+    print(f"Documents that already had _agCoreInfo and were overwritten: {already_had_agcoreinfo_count}")
+
 
 if __name__ == "__main__":
     copy_documents()
-    print("Document copy completed.")
