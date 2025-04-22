@@ -7,8 +7,8 @@ SRC_ES_HOST = "http://192.168.40.14:9200"
 DEST_ES_HOST = "http://192.168.40.14:9200"
 
 # The index to copy from and to
-SRC_INDEX = "change"
-DEST_INDEX = "change"
+SRC_INDEX = "ag-prod-2542-events-at-4"
+DEST_INDEX = "ag-prod-2542-events-at-4-sanitized"
 
 # Batch size for bulk operations
 BATCH_SIZE = 1000
@@ -51,7 +51,10 @@ def deep_merge_ag_core_info(existing, update):
         if isinstance(value, dict):
             existing[key] = deep_merge_ag_core_info(existing.get(key, {}), value)
         else:
-            existing[key] = value
+            if key not in existing:
+                existing[key] = value
+            elif value not in [None, "", 0]:
+                existing[key] = value
     return existing
 
 def log_agcoreinfo_changes(doc_id, original, updated):
