@@ -6,8 +6,11 @@ SRC_ES_HOST = "http://192.168.40.14:9200"  # Replace with the source Elasticsear
 DEST_ES_HOST = "http://127.0.0.1:9200"     # Replace with the destination Elasticsearch host and port
 
 # The index to copy from and to
-SRC_INDEX = "ag-prod-5520-network-indicators"   # Replace with the source index name
-DEST_INDEX = "ag-prod-5520-network-indicators"  # Replace with the destination index name
+SRC_INDEX = "change"   # Replace with the source index name
+DEST_INDEX = "change"  # Replace with the destination index name
+
+# Batch size for bulk operations
+BATCH_SIZE = 1000
 
 # Connect to the source and destination Elasticsearch instances
 src_es = Elasticsearch([SRC_ES_HOST])
@@ -39,8 +42,8 @@ AG_CORE_INFO = {
 }
 
 def copy_documents():
-    scroll = "2m"  # Scroll time (can be adjusted as needed)
-    size = 1000    # Batch size to fetch per scroll
+    scroll = "2m"  # Scroll time
+    size = BATCH_SIZE    # Batch size to fetch per scroll
     query = {"query": {"match_all": {}}}
 
     result = src_es.search(index=SRC_INDEX, body=query, scroll=scroll, size=size)
