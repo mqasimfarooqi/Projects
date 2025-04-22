@@ -4,7 +4,7 @@ from copy import deepcopy
 
 # Constants for source and destination Elasticsearch configurations
 SRC_ES_HOST = "http://192.168.40.14:9200"
-DEST_ES_HOST = "http://127.0.0.1:9200"
+DEST_ES_HOST = "http://192.168.40.14:9200"
 
 # The index to copy from and to
 SRC_INDEX = "ag-prod-2542-events-at-4"
@@ -50,7 +50,7 @@ def deep_merge_ag_core_info(existing, update):
     for key, value in update.items():
         if isinstance(value, dict):
             existing[key] = deep_merge_ag_core_info(existing.get(key, {}), value)
-        elif value not in [None, "", 0]:
+        else:
             existing[key] = value
     return existing
 
@@ -126,7 +126,7 @@ def copy_documents():
             actions.append({
                 "_op_type": "index",
                 "_index": DEST_INDEX,
-                "_id": doc_id,  # Retain original ID
+                "_id": doc_id,
                 "_source": source
             })
 
