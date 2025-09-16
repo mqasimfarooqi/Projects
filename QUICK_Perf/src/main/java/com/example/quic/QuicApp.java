@@ -159,6 +159,7 @@ public class QuicApp {
 
             QuicStreamChannel streamChannel = quicChannel.createStream(QuicStreamType.BIDIRECTIONAL,
                     new ChannelInboundHandlerAdapter() {
+
                 @Override
                 public void channelRead(ChannelHandlerContext ctx, Object msg) {
                     ByteBuf byteBuf = (ByteBuf) msg;
