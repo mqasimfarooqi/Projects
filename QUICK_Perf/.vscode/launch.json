@@ -10,7 +10,7 @@
             "request": "launch",
             "mainClass": "com.example.quic.QuicApp",
             "projectName": "quic-app",
-            "args": "server",
+            "args": "client",
             "cwd": "${workspaceFolder}"
         }
     ]
