@@ -41,7 +41,11 @@ public class QuicApp {
             if ("server".equalsIgnoreCase(mode)) {
                 runServer(4433);
             } else if ("client".equalsIgnoreCase(mode)) {
-                runClient("127.0.0.1", 4433, 10 * 1024 * 1024, 10); // 10 MB at 10 Mbps
+                var host = "127.0.0.1";
+                var port = 4433;
+                var totalBytes = 10 * 1024 * 1024; // 10 MB
+                var rateMbps = 10; // 10 Mbps
+                runClient(host, port, totalBytes, rateMbps);
             } else {
                 System.err.println("unknown mode: " + mode);
             }
@@ -137,8 +141,6 @@ public class QuicApp {
                     .sslContext(context)
                     .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
                     .initialMaxData(10000000)
-                    // As we don't want to support remote initiated streams just setup the limit for local initiated
-                    // streams in this example.
                     .initialMaxStreamDataBidirectionalLocal(1000000)
                     .build();
 
