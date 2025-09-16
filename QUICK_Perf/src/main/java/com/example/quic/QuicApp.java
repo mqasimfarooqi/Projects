@@ -64,22 +64,17 @@ public class QuicApp {
 
         ChannelHandler codec = new QuicServerCodecBuilder().sslContext(context)
                 .maxIdleTimeout(5000, TimeUnit.MILLISECONDS)
-                // Configure some limits for the maximal number of streams (and the data) that we want to handle.
                 .initialMaxData(10000000)
                 .initialMaxStreamDataBidirectionalLocal(1000000)
                 .initialMaxStreamDataBidirectionalRemote(1000000)
                 .initialMaxStreamsBidirectional(100)
                 .initialMaxStreamsUnidirectional(100)
                 .activeMigration(true)
-                // Setup a token handler. In a production system you would want to implement and provide your custom
-                // one.
                 .tokenHandler(InsecureQuicTokenHandler.INSTANCE)
-                // ChannelHandler that is added into QuicChannel pipeline.
                 .handler(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void channelActive(ChannelHandlerContext ctx) {
                         QuicChannel channel = (QuicChannel) ctx.channel();
-                        // Create streams etc..
                     }
 
                     public void channelInactive(ChannelHandlerContext ctx) {
@@ -98,7 +93,6 @@ public class QuicApp {
                 .streamHandler(new ChannelInitializer<QuicStreamChannel>() {
                     @Override
                     protected void initChannel(QuicStreamChannel ch) {
-                        // Add a LineBasedFrameDecoder here as we just want to do some simple HTTP 0.9 handling.
                         ch.pipeline().addLast(new LineBasedFrameDecoder(1024))
                                 .addLast(new ChannelInboundHandlerAdapter() {
                                     @Override
@@ -108,7 +102,6 @@ public class QuicApp {
                                             if (byteBuf.toString(CharsetUtil.US_ASCII).trim().equals("GET /")) {
                                                 ByteBuf buffer = ctx.alloc().directBuffer();
                                                 buffer.writeCharSequence("Hello World!\r\n", CharsetUtil.US_ASCII);
-                                                // Write the buffer and shutdown the output by writing a FIN.
                                                 ctx.writeAndFlush(buffer).addListener(QuicStreamChannel.SHUTDOWN_OUTPUT);
                                             }
                                         } finally {
@@ -154,9 +147,6 @@ public class QuicApp {
                     .streamHandler(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void channelActive(ChannelHandlerContext ctx) {
-                            // As we did not allow any remote initiated streams we will never see this method called.
-                            // That said just let us keep it here to demonstrate that this handle would be called
-                            // for each remote initiated stream.
                             ctx.close();
                         }
                     })
@@ -176,19 +166,14 @@ public class QuicApp {
                 @Override
                 public void userEventTriggered(ChannelHandlerContext ctx, Object evt) {
                     if (evt == ChannelInputShutdownReadComplete.INSTANCE) {
-                        // Close the connection once the remote peer did send the FIN for this stream.
                         ((QuicChannel) ctx.channel().parent()).close(true, 0,
                                 ctx.alloc().directBuffer(16)
                                         .writeBytes(new byte[]{'k', 't', 'h', 'x', 'b', 'y', 'e'}));
                     }
                 }
             }).sync().getNow();
-            // Write the data and send the FIN. After this its not possible anymore to write any more data.
             streamChannel.writeAndFlush(Unpooled.copiedBuffer("GET /\r\n", CharsetUtil.US_ASCII))
                     .addListener(QuicStreamChannel.SHUTDOWN_OUTPUT);
-
-            // Wait for the stream channel and quic channel to be closed (this will happen after we received the FIN).
-            // After this is done we will close the underlying datagram channel.
             streamChannel.closeFuture().sync();
             quicChannel.closeFuture().sync();
             channel.close().sync();
