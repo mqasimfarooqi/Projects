@@ -75,6 +75,7 @@ public class QuicApp {
                     @Override
                     public void channelActive(ChannelHandlerContext ctx) {
                         QuicChannel channel = (QuicChannel) ctx.channel();
+                        System.out.println("New QUIC connection established: " + channel.remoteAddress());
                     }
 
                     public void channelInactive(ChannelHandlerContext ctx) {
