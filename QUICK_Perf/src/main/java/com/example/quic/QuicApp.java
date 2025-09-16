@@ -78,8 +78,10 @@ public class QuicApp {
                         System.out.println("New QUIC connection established: " + channel.remoteAddress());
                     }
 
+                    @Override
                     public void channelInactive(ChannelHandlerContext ctx) {
-                        ((QuicChannel) ctx.channel()).collectStats().addListener(f -> {
+                        QuicChannel channel = (QuicChannel) ctx.channel();
+                        channel.collectStats().addListener(f -> {
                             if (f.isSuccess()) {
                                 System.out.println("Connection closed: " + f.getNow());
                             }
