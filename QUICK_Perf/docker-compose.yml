@@ -1,0 +1,15 @@
+version: "3.3"
+services:
+  quic-server:
+    build: .
+    container_name: quic-server
+    ports:
+      - "4433:4433/udp"
+    command: ["java", "-jar", "/app/quic-app.jar", "server"]
+
+  quic-client:
+    build: .
+    container_name: quic-client
+    depends_on:
+      - quic-server
+    command: ["java", "-jar", "/app/quic-app.jar", "client", "quic-server", "100M", "10Mbps"]
