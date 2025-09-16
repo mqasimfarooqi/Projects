@@ -1,5 +1,5 @@
-# Use Eclipse Temurin JDK 17
-FROM eclipse-temurin:17-jdk-jammy
+# Use Eclipse Temurin JDK 21
+FROM eclipse-temurin:21-jdk-jammy
 
 WORKDIR /app
 
