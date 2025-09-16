@@ -26,7 +26,6 @@ import io.netty.incubator.codec.quic.QuicSslContextBuilder;
 import io.netty.incubator.codec.quic.QuicStreamChannel;
 import io.netty.incubator.codec.quic.QuicStreamType;
 import io.netty.util.CharsetUtil;
-import io.netty.util.NetUtil;
 
 public class QuicApp {
 
@@ -39,7 +38,8 @@ public class QuicApp {
         String mode = args[0];
         try {
             if ("server".equalsIgnoreCase(mode)) {
-                runServer(4433);
+                var port = 4433;
+                runServer(port);
             } else if ("client".equalsIgnoreCase(mode)) {
                 var host = "127.0.0.1";
                 var port = 4433;
@@ -120,13 +120,13 @@ public class QuicApp {
             Channel channel = bs.group(group)
                     .channel(NioDatagramChannel.class)
                     .handler(codec)
-                    .bind(new InetSocketAddress(9999)).sync().channel();
+                    .bind(new InetSocketAddress(port)).sync().channel();
             channel.closeFuture().sync();
         } finally {
             group.shutdownGracefully();
         }
     }
-
+ 
     static void runClient(String host, int port, long totalBytes, double rateMbps) {
         System.out.printf("Client connecting to %s:%d%n", host, port);
         QuicSslContext context = QuicSslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).
@@ -153,7 +153,7 @@ public class QuicApp {
                             ctx.close();
                         }
                     })
-                    .remoteAddress(new InetSocketAddress(NetUtil.LOCALHOST4, 9999))
+                    .remoteAddress(new InetSocketAddress(host, port))
                     .connect()
                     .get();
 
