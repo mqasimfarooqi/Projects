@@ -59,10 +59,10 @@ async def run_benchmark(url, method, duration, concurrency, keep_alive=True):
     
     if latencies:
         print("\nPercentage of the requests served within a certain time (ms)")
-        intervals = [50, 66, 75, 80, 90, 95, 98, 99]
-        for i in intervals:
-            idx = int((i / 100) * len(latencies)) - 1
-            print(f"  {i}%    {latencies[idx]:.2f}")
+        for p in [50, 66, 75, 80, 90, 95, 98, 99, 100]:
+            idx = min(len(latencies) - 1, int((p / 100) * len(latencies)))
+            label = f"{p}%" if p < 100 else "max"
+            print(f"  {label.ljust(4)}  {latencies[idx]:.2f} ms")
     
     print(f"Status Codes: {dict(statuses)}")
 
