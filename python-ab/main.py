@@ -1,4 +1,5 @@
 import asyncio
+import statistics
 import time
 from collections import Counter
 
@@ -6,11 +7,10 @@ import aiohttp
 
 
 async def worker(session, url, method, results, stop_event):
-    """A persistent worker that keeps sending requests until the time is up."""
+    """Continuous worker loop."""
     while not stop_event.is_set():
         start_time = time.perf_counter()
         try:
-            # Using the dynamic method (PUT, POST, GET, etc.)
             async with session.request(method, url) as response:
                 await response.read() 
                 duration = time.perf_counter() - start_time
@@ -18,49 +18,62 @@ async def worker(session, url, method, results, stop_event):
         except Exception:
             results.append(("Error", 0))
 
-async def run_timed_benchmark(url, method, duration_secs, concurrency):
+async def run_benchmark(url, method, duration, concurrency, keep_alive=True):
+    # Toggle connection pooling vs new connections
+    connector = aiohttp.TCPConnector(force_close=not keep_alive)
+    
+    # ab -k (Keep-Alive) sends this header; otherwise we send 'close'
+    headers = {'Connection': 'keep-alive' if keep_alive else 'close'}
+    
     results = []
     stop_event = asyncio.Event()
 
-    print(f"Benchmarking {url}...")
-    print(f"Method: {method} | Concurrency: {concurrency} | Duration: {duration_secs}s")
-    print("--------------------------------------------------")
+    print(f"Benchmarking {url}")
+    print(f"Mode: {'Persistent (Keep-Alive)' if keep_alive else 'New Connection per Request'}")
+    print(f"Concurrency: {concurrency} | Duration: {duration}s")
+    print("-" * 50)
 
-    async with aiohttp.ClientSession() as session:
-        # Create 'concurrency' number of workers
+    async with aiohttp.ClientSession(connector=connector, headers=headers) as session:
         tasks = [
             asyncio.create_task(worker(session, url, method, results, stop_event)) 
             for _ in range(concurrency)
         ]
 
-        # Wait for the specified duration
-        await asyncio.sleep(duration_secs)
-        
-        # Signal workers to stop and wait for them to wrap up current request
+        await asyncio.sleep(duration)
         stop_event.set()
         await asyncio.gather(*tasks)
 
-    # Statistics Calculation
+    # --- Statistics Engine ---
     total_reqs = len(results)
+    if not total_reqs: return print("No data.")
+
     statuses = Counter([r[0] for r in results])
-    latencies = [r[1] for r in results if r[0] != "Error"]
+    latencies = sorted([r[1] * 1000 for r in results if r[0] != "Error"]) # in ms
     
-    # Summary Output
-    rps = total_reqs / duration_secs
-    avg_lat = (sum(latencies) / len(latencies) * 1000) if latencies else 0
+    rps = total_reqs / duration
+    avg_lat = statistics.mean(latencies) if latencies else 0
 
     print(f"Complete requests:      {total_reqs}")
-    print(f"Requests per second:    {rps:.2f} [#/sec] (mean)")
-    print(f"Time per request:       {avg_lat:.3f} [ms] (mean)")
-    print("Status Codes:")
-    for code, count in statuses.items():
-        print(f"  {code}: {count}")
+    print(f"Requests per second:    {rps:.2f} [#/sec]")
+    print(f"Mean Latency:           {avg_lat:.3f} [ms]")
+    
+    if latencies:
+        print("\nPercentage of the requests served within a certain time (ms)")
+        intervals = [50, 66, 75, 80, 90, 95, 98, 99]
+        for i in intervals:
+            idx = int((i / 100) * len(latencies)) - 1
+            print(f"  {i}%    {latencies[idx]:.2f}")
+    
+    print(f"Status Codes: {dict(statuses)}")
 
 if __name__ == "__main__":
-    # Settings from your command: ab -m PUT -t 10 -c 100
-    TARGET_URL = "http://192.168.1.2:3101/auth/sessions"
+    # CONFIGURATION
+    URL = "http://192.168.1.2:3101/auth/sessions"
     METHOD = "PUT"
-    SECONDS = 10
+    TIME = 10
     CONCURRENCY = 100
+    
+    # Set to True for -k behavior, False for default ab behavior
+    KEEP_ALIVE = False 
 
-    asyncio.run(run_timed_benchmark(TARGET_URL, METHOD, SECONDS, CONCURRENCY))
+    asyncio.run(run_benchmark(URL, METHOD, TIME, CONCURRENCY, KEEP_ALIVE))
